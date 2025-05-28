@@ -25,16 +25,16 @@ class CiqualCacheManager {
 
       // Get the data source
       final ciqualDataSource = di.sl<CiqualLocalDataSource>();
-      
+
       // Clear the cache
       await ciqualDataSource.clearCache();
-      
+
       // Force re-initialization
       await ciqualDataSource.initializeDatabase();
-      
+
       // Close loading dialog
       Navigator.of(context).pop();
-      
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -42,11 +42,10 @@ class CiqualCacheManager {
           backgroundColor: Colors.green,
         ),
       );
-      
     } catch (e) {
       // Close loading dialog if open
       Navigator.of(context).pop();
-      
+
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

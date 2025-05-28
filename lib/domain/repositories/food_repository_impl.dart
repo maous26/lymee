@@ -112,7 +112,8 @@ class FoodRepositoryImpl implements FoodRepository {
         }
 
         // ✅ FIX: Apply local filtering to remote results to ensure they match the query
-        final filteredRemoteResults = await openFoodFactsLocalDataSource.searchFoods(query, brand: brand);
+        final filteredRemoteResults =
+            await openFoodFactsLocalDataSource.searchFoods(query, brand: brand);
         return Right(filteredRemoteResults);
       } on ServerException catch (_) {
         // En cas d'erreur distante, retourner les résultats locaux

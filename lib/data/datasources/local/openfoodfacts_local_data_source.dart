@@ -43,7 +43,7 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
     print('🔍 Local OpenFoodFacts search:');
     print('  Query: "$query"');
     print('  Brand: ${brand ?? "none"}');
-    
+
     try {
       final String? jsonString = sharedPreferences.getString(cachedFoodsKey);
 
@@ -54,7 +54,7 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
 
       List<dynamic> cachedFoods = jsonDecode(jsonString);
       print('  📦 Found ${cachedFoods.length} cached foods');
-      
+
       List<OpenFoodFactsFoodModel> foods = cachedFoods
           .map((item) => OpenFoodFactsFoodModel.fromJson(item))
           .toList();
@@ -78,7 +78,7 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
 
           matchesQuery = normalizedName.contains(normalizedQuery) ||
               normalizedCategory.contains(normalizedQuery);
-              
+
           if (!matchesQuery) {
             print('  ❌ "${food.name}" doesn\'t match query');
             print('    Normalized name: "$normalizedName"');
@@ -91,7 +91,7 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
         if (brand != null && brand.isNotEmpty) {
           matchesBrand = food.brand != null &&
               _normalizeString(food.brand!).contains(_normalizeString(brand));
-              
+
           if (!matchesBrand) {
             print('  ❌ "${food.name}" doesn\'t match brand filter');
           }
@@ -101,10 +101,10 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
         if (matches) {
           print('  ✅ "${food.name}" matches criteria');
         }
-        
+
         return matches;
       }).toList();
-      
+
       print('  🎯 Final result: ${filteredFoods.length} matching foods');
       return filteredFoods;
     } catch (e) {

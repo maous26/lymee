@@ -5,13 +5,13 @@ import 'dart:io';
 
 void main() async {
   print('🔄 Recherche du cache CIQUAL...');
-  
+
   // Common SharedPreferences locations on macOS
   final possiblePaths = [
     '${Platform.environment['HOME']}/Library/Preferences/',
     '${Platform.environment['HOME']}/Library/Application Support/',
   ];
-  
+
   // Look for your app's preference files
   for (final path in possiblePaths) {
     final dir = Directory(path);
@@ -24,7 +24,7 @@ void main() async {
       }
     }
   }
-  
+
   print('');
   print('📱 Pour effacer le cache CIQUAL de votre app:');
   print('1. Ouvrez l\'app LYM Nutrition');

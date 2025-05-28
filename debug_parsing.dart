@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 // Simple debug test to verify the OpenFoodFacts parsing logic
 void main() {
   print('Testing OpenFoodFacts JSON parsing...');
-  
+
   // Simulate a response from OpenFoodFacts API
   final mockApiResponse = {
     "products": [
@@ -31,21 +31,21 @@ void main() {
   };
 
   print('Mock API response created');
-  
+
   // Test the parsing logic exactly as done in the app
   if (mockApiResponse.containsKey('products')) {
     final List<dynamic> products = mockApiResponse['products'];
     print('Found ${products.length} products');
-    
+
     if (products.isNotEmpty) {
       for (int i = 0; i < products.length; i++) {
         final product = products[i];
         print('\n--- Product $i ---');
-        
+
         // Test the wrapping logic from remote data source
         final wrappedProduct = {'product': product};
         print('Created wrapped product');
-        
+
         // Test the fromJson logic from OpenFoodFactsFoodModel
         try {
           final productData = wrappedProduct['product'] ?? wrappedProduct;
@@ -77,22 +77,21 @@ void main() {
           print('  Sugar: $sugar');
           print('  Fiber: $fiber');
           print('  Image URL: $imageUrl');
-          
+
           // Test the search filtering logic
           final query = 'thon';
           final normalizedQuery = _normalizeString(query);
           final normalizedName = _normalizeString(name);
           final normalizedCategory = _normalizeString(category);
-          
+
           final matchesQuery = normalizedName.contains(normalizedQuery) ||
               normalizedCategory.contains(normalizedQuery);
-              
+
           print('  Query: $query');
           print('  Normalized query: $normalizedQuery');
           print('  Normalized name: $normalizedName');
           print('  Normalized category: $normalizedCategory');
           print('  Matches query: $matchesQuery');
-          
         } catch (e) {
           print('Error parsing product: $e');
         }

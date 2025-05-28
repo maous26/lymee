@@ -21,7 +21,8 @@ class FoodSearchScreen extends StatefulWidget {
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
 }
 
-class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerProviderStateMixin {
+class _FoodSearchScreenState extends State<FoodSearchScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late TabController _tabController;
@@ -32,7 +33,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabChange);
-    
+
     // Charger l'historique au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<FoodSearchBloc>().add(GetFoodHistoryEvent());
@@ -50,7 +51,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
 
   void _handleTabChange() {
     // Si on change d'onglet, exécuter la recherche avec le filtre approprié
-    if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
+    if (_tabController.indexIsChanging ||
+        _tabController.index != _tabController.previousIndex) {
       _performSearch(_searchController.text);
     }
   }
@@ -69,7 +71,9 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
         context.read<FoodSearchBloc>().add(SearchFreshFoodsEvent(query: query));
         break;
       case 2: // Transformés
-        context.read<FoodSearchBloc>().add(SearchProcessedFoodsEvent(query: query));
+        context
+            .read<FoodSearchBloc>()
+            .add(SearchProcessedFoodsEvent(query: query));
         break;
     }
   }
@@ -93,7 +97,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -174,7 +178,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
                     controller: _tabController,
                     indicatorColor: AppTheme.primaryColor,
                     labelColor: AppTheme.primaryColor,
-                    unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
+                    unselectedLabelColor:
+                        theme.colorScheme.onSurface.withOpacity(0.7),
                     tabs: const [
                       Tab(text: 'Tous'),
                       Tab(text: 'Frais'),
@@ -207,7 +212,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
                 borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
               ),
             ),
-            
+
             // Contenu principal
             Expanded(
               child: BlocBuilder<FoodSearchBloc, FoodSearchState>(
@@ -222,12 +227,13 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
                     if (state.foods.isEmpty) {
                       return EmptyResults(
                         message: 'Aucun résultat trouvé',
-                        submessage: 'Essayez avec d\'autres termes de recherche',
+                        submessage:
+                            'Essayez avec d\'autres termes de recherche',
                         icon: Icons.search_off,
                         color: AppTheme.primaryColor,
                       );
                     }
-                    
+
                     return ListView.builder(
                       padding: const EdgeInsets.only(top: 8, bottom: 16),
                       itemCount: state.foods.length,
@@ -251,12 +257,13 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
                         color: AppTheme.primaryColor,
                       );
                     }
-                    
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+                          padding: const EdgeInsets.only(
+                              left: 16, top: 16, bottom: 8),
                           child: Text(
                             'Historique récent',
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -290,14 +297,16 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> with SingleTickerPr
                       icon: Icons.error_outline,
                       color: AppTheme.error,
                       actionLabel: 'Réessayer',
-                      onActionPressed: () => _performSearch(_searchController.text),
+                      onActionPressed: () =>
+                          _performSearch(_searchController.text),
                     );
                   }
-                  
+
                   // État initial, afficher une invitation à rechercher
                   return EmptyResults(
                     message: 'Recherchez un aliment',
-                    submessage: 'Saisissez un nom d\'aliment dans la barre de recherche',
+                    submessage:
+                        'Saisissez un nom d\'aliment dans la barre de recherche',
                     icon: Icons.search,
                     color: AppTheme.primaryColor,
                   );
