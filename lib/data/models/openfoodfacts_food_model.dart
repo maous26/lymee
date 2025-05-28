@@ -43,19 +43,33 @@ class OpenFoodFactsFoodModel extends FoodItem {
         );
 
   factory OpenFoodFactsFoodModel.fromJson(Map<String, dynamic> json) {
+    // Debug logging
+    print('🏗️ Parsing OpenFoodFacts product:');
+    print('  JSON keys: ${json.keys.toList()}');
+
     // Structure à adapter en fonction du format réel d'OpenFoodFacts
     final product = json['product'] ?? json;
+    print('  Product keys: ${product.keys.toList()}');
 
     final nutrients = product['nutriments'] ?? {};
     final imageUrl = product['image_url'] ?? '';
 
+    final name = product['product_name'] ?? '';
+    final brand = product['brands'] ?? '';
+    final barcode = product['code'] ?? product['_id'] ?? '';
+
+    print('  Extracted values:');
+    print('    Name: "$name"');
+    print('    Brand: "$brand"');
+    print('    Barcode: "$barcode"');
+
     return OpenFoodFactsFoodModel(
-      barcode: product['code'] ?? product['_id'] ?? '',
-      name: product['product_name'] ?? '',
+      barcode: barcode,
+      name: name,
       category: product['categories_tags']?.isNotEmpty
           ? product['categories_tags'][0]
           : 'Non catégorisé',
-      brand: product['brands'] ?? '',
+      brand: brand,
       calories: _getDoubleValue(nutrients, 'energy-kcal_100g') ?? 0,
       proteins: _getDoubleValue(nutrients, 'proteins_100g') ?? 0,
       carbs: _getDoubleValue(nutrients, 'carbohydrates_100g') ?? 0,

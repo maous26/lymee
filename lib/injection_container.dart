@@ -37,12 +37,19 @@ Future<void> init() async {
       getFoodHistory: sl(),
     ),
   );
-
+  
   sl.registerFactory(
-    () => FoodDetailBloc(getFoodById: sl(), addToHistory: sl()),
+    () => FoodDetailBloc(
+      getFoodById: sl(),
+      addToHistory: sl(),
+    ),
   );
-
-  sl.registerFactory(() => FoodHistoryBloc(getFoodHistory: sl()));
+  
+  sl.registerFactory(
+    () => FoodHistoryBloc(
+      getFoodHistory: sl(),
+    ),
+  );
 
   // Use cases
   sl.registerLazySingleton(() => SearchFoodsUseCase(sl()));
@@ -68,27 +75,39 @@ Future<void> init() async {
 
   // Data sources
   sl.registerLazySingleton<CiqualLocalDataSource>(
-    () => CiqualLocalDataSourceImpl(sharedPreferences: sl()),
+    () => CiqualLocalDataSourceImpl(
+      sharedPreferences: sl(),
+    ),
   );
 
   sl.registerLazySingleton<OpenFoodFactsLocalDataSource>(
-    () => OpenFoodFactsLocalDataSourceImpl(sharedPreferences: sl()),
+    () => OpenFoodFactsLocalDataSourceImpl(
+      sharedPreferences: sl(),
+    ),
   );
 
   sl.registerLazySingleton<OpenFoodFactsRemoteDataSource>(
-    () => OpenFoodFactsRemoteDataSourceImpl(client: sl()),
+    () => OpenFoodFactsRemoteDataSourceImpl(
+      client: sl(),
+    ),
   );
 
   sl.registerLazySingleton<FoodHistoryDataSource>(
-    () => FoodHistoryDataSourceImpl(sharedPreferences: sl()),
+    () => FoodHistoryDataSourceImpl(
+      sharedPreferences: sl(),
+    ),
   );
 
   sl.registerLazySingleton<UserPreferencesDataSource>(
-    () => UserPreferencesDataSourceImpl(sharedPreferences: sl()),
+    () => UserPreferencesDataSourceImpl(
+      sharedPreferences: sl(),
+    ),
   );
 
   //! Core
-  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
+  sl.registerLazySingleton<NetworkInfo>(
+    () => NetworkInfoImpl(sl()),
+  );
 
   //! External
   final sharedPreferences = await SharedPreferences.getInstance();

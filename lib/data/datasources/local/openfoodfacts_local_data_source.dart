@@ -40,27 +40,36 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
     String query, {
     String? brand,
   }) async {
+    print('🔍 Local OpenFoodFacts search:');
+    print('  Query: "$query"');
+    print('  Brand: ${brand ?? "none"}');
+    
     try {
       final String? jsonString = sharedPreferences.getString(cachedFoodsKey);
 
       if (jsonString == null) {
+        print('  📭 No cached foods found');
         return [];
       }
 
       List<dynamic> cachedFoods = jsonDecode(jsonString);
+      print('  📦 Found ${cachedFoods.length} cached foods');
+      
       List<OpenFoodFactsFoodModel> foods = cachedFoods
           .map((item) => OpenFoodFactsFoodModel.fromJson(item))
           .toList();
 
       if (query.isEmpty && brand == null) {
+        print('  🎯 Returning all ${foods.length} foods (empty query)');
         return foods;
       }
 
       // Normalisation de la requête
       final String normalizedQuery = _normalizeString(query);
+      print('  🔧 Normalized query: "$normalizedQuery"');
 
       // Filtrage par requête et marque si spécifiée
-      return foods.where((food) {
+      final filteredFoods = foods.where((food) {
         bool matchesQuery = true;
 
         if (normalizedQuery.isNotEmpty) {
@@ -69,6 +78,12 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
 
           matchesQuery = normalizedName.contains(normalizedQuery) ||
               normalizedCategory.contains(normalizedQuery);
+              
+          if (!matchesQuery) {
+            print('  ❌ "${food.name}" doesn\'t match query');
+            print('    Normalized name: "$normalizedName"');
+            print('    Normalized category: "$normalizedCategory"');
+          }
         }
 
         bool matchesBrand = true;
@@ -76,11 +91,24 @@ class OpenFoodFactsLocalDataSourceImpl implements OpenFoodFactsLocalDataSource {
         if (brand != null && brand.isNotEmpty) {
           matchesBrand = food.brand != null &&
               _normalizeString(food.brand!).contains(_normalizeString(brand));
+              
+          if (!matchesBrand) {
+            print('  ❌ "${food.name}" doesn\'t match brand filter');
+          }
         }
 
-        return matchesQuery && matchesBrand;
+        final matches = matchesQuery && matchesBrand;
+        if (matches) {
+          print('  ✅ "${food.name}" matches criteria');
+        }
+        
+        return matches;
       }).toList();
+      
+      print('  🎯 Final result: ${filteredFoods.length} matching foods');
+      return filteredFoods;
     } catch (e) {
+      print('  💥 Error in local search: $e');
       throw CacheException(e.toString());
     }
   }
