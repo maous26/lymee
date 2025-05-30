@@ -9,6 +9,238 @@ import 'package:lym_nutrition/presentation/themes/app_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/nutrition_score_badge.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+class MealSelectionDialog extends StatefulWidget {
+  final FoodItem food;
+
+  const MealSelectionDialog({super.key, required this.food});
+
+  @override
+  State<MealSelectionDialog> createState() => _MealSelectionDialogState();
+}
+
+class _MealSelectionDialogState extends State<MealSelectionDialog> {
+  String selectedMeal = 'Petit-déjeuner';
+  double quantity = 100;
+  String unit = 'g';
+  final _quantityController = TextEditingController(text: '100');
+
+  final List<String> meals = [
+    'Petit-déjeuner',
+    'Déjeuner',
+    'Dîner',
+    'Collation',
+  ];
+
+  final List<String> units = ['g', 'ml', 'portion'];
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Ajouter ${widget.food.name}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Sélection du repas
+            Text(
+              'Repas',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: selectedMeal,
+                  isExpanded: true,
+                  items: meals.map((meal) {
+                    return DropdownMenuItem(
+                      value: meal,
+                      child: Text(meal),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedMeal = value;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Quantité
+            Text(
+              'Quantité',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: _quantityController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      final parsed = double.tryParse(value);
+                      if (parsed != null && parsed > 0) {
+                        setState(() {
+                          quantity = parsed;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: unit,
+                        isExpanded: true,
+                        items: units.map((u) {
+                          return DropdownMenuItem(
+                            value: u,
+                            child: Text(u),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              unit = value;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Informations nutritionnelles pour la quantité sélectionnée
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Valeurs nutritionnelles pour ${quantity.toStringAsFixed(0)} $unit',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildNutrientInfo(
+                        'Calories',
+                        '${(widget.food.calories * quantity / 100).round()} kcal',
+                      ),
+                      _buildNutrientInfo(
+                        'Protéines',
+                        '${(widget.food.proteins * quantity / 100).toStringAsFixed(1)} g',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildNutrientInfo(
+                        'Glucides',
+                        '${(widget.food.carbs * quantity / 100).toStringAsFixed(1)} g',
+                      ),
+                      _buildNutrientInfo(
+                        'Lipides',
+                        '${(widget.food.fats * quantity / 100).toStringAsFixed(1)} g',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop({
+              'meal': selectedMeal,
+              'quantity': quantity,
+              'unit': unit,
+            });
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Ajouter'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNutrientInfo(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
 class FoodDetailScreen extends StatefulWidget {
   final String foodId;
   final String foodSource;
@@ -217,14 +449,37 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Logique pour ajouter l'aliment à un repas
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Aliment ajouté au repas'),
-              backgroundColor: AppTheme.success,
-            ),
+        onPressed: () async {
+          // Afficher le dialogue de sélection de repas
+          final result = await showDialog<Map<String, dynamic>>(
+            context: context,
+            builder: (context) => MealSelectionDialog(food: food),
           );
+
+          // Traiter le résultat si l'utilisateur a validé
+          if (result != null) {
+            String meal = result['meal'];
+            double quantity = result['quantity'];
+            String unit = result['unit'];
+
+            // Afficher un message de confirmation
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${food.name} ajouté à $meal (${quantity.toStringAsFixed(0)} $unit)',
+                  ),
+                  backgroundColor: AppTheme.success,
+                  duration: const Duration(seconds: 3),
+                  action: SnackBarAction(
+                    label: 'OK',
+                    textColor: Colors.white,
+                    onPressed: () {},
+                  ),
+                ),
+              );
+            }
+          }
         },
         backgroundColor: sourceColor,
         child: const Icon(Icons.add, color: Colors.white),
@@ -428,13 +683,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                     const SizedBox(height: 12),
                     _buildInfoRow('Marque', food.brand!, Icons.business, theme),
                   ],
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                    'Source',
-                    food.source == 'ciqual' ? 'CIQUAL' : 'OpenFoodFacts',
-                    Icons.source,
-                    theme,
-                  ),
                 ],
               ),
             ),
@@ -572,26 +820,38 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+
+                  // MODIFICATION ICI: Nouvelles barres pour "Lipides, dont graisses saturées" et "Glucides, dont sucres"
+                  Column(
                     children: [
-                      _buildNutrientBar(
-                        'Sucres',
-                        food.sugar.toStringAsFixed(1),
+                      // Lipides et graisses saturées
+                      _buildDualNutrientBar(
+                        'Lipides',
+                        food.fats,
+                        'dont graisses saturées',
+                        _getSaturatedFats(food),
                         'g',
-                        Colors.pink,
+                        Colors.red,
+                        Colors.red.shade900,
                         theme,
                       ),
-                      const SizedBox(width: 24),
-                      _buildNutrientBar(
-                        'Fibres',
-                        food.fiber.toStringAsFixed(1),
+
+                      const SizedBox(height: 16),
+
+                      // Glucides et sucres
+                      _buildDualNutrientBar(
+                        'Glucides',
+                        food.carbs,
+                        'dont sucres',
+                        food.sugar,
                         'g',
-                        Colors.green,
+                        Colors.orange,
+                        Colors.pink,
                         theme,
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 8),
                   Text(
                     'Valeurs pour 100g de produit',
@@ -608,6 +868,146 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
         ],
       ),
     );
+  }
+
+// Nouvelle méthode pour obtenir les graisses saturées
+  double _getSaturatedFats(FoodItem food) {
+    // Essayer de récupérer les graisses saturées depuis les nutriments
+    if (food.nutrients.containsKey('AG saturés (g/100 g)')) {
+      var value = food.nutrients['AG saturés (g/100 g)'];
+      if (value is String) {
+        if (value.startsWith('<')) {
+          return double.tryParse(value.substring(1).trim())! / 2;
+        }
+        return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+      }
+      if (value is num) {
+        return value.toDouble();
+      }
+    }
+
+    // Si pas disponible, estimer à 30% des lipides totaux
+    return food.fats * 0.3;
+  }
+
+// Nouvelle méthode pour afficher les barres doubles
+  Widget _buildDualNutrientBar(
+    String mainLabel,
+    double mainValue,
+    String subLabel,
+    double subValue,
+    String unit,
+    Color mainColor,
+    Color subColor,
+    ThemeData theme,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Étiquette principale
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              mainLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              '${mainValue.toStringAsFixed(1)} $unit',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: mainColor,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 4),
+
+        // Barre principale
+        Container(
+          width: double.infinity,
+          height: 14,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+            color: mainColor.withOpacity(0.1),
+          ),
+          child: Stack(
+            children: [
+              // Valeur principale
+              FractionallySizedBox(
+                widthFactor: _getWidthFactor(mainValue),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(AppTheme.borderRadiusSmall),
+                    color: mainColor.withOpacity(0.7),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 6),
+
+        // Étiquette secondaire
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              subLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            Text(
+              '${subValue.toStringAsFixed(1)} $unit',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: subColor,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 2),
+
+        // Barre secondaire
+        Container(
+          width: double.infinity,
+          height: 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+            color: subColor.withOpacity(0.1),
+          ),
+          child: Stack(
+            children: [
+              // Valeur secondaire
+              FractionallySizedBox(
+                widthFactor: _getWidthFactor(subValue),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(AppTheme.borderRadiusSmall),
+                    color: subColor.withOpacity(0.7),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+// Calculer le facteur de largeur pour les barres
+  double _getWidthFactor(double value) {
+    // Limiter la largeur à un maximum raisonnable
+    // Considérons qu'une valeur de 50g est 100%
+    return (value / 50.0).clamp(0.0, 1.0);
   }
 
   Widget _buildNutrientsTab(
