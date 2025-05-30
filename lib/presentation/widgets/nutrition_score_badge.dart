@@ -20,7 +20,8 @@ class NutritionScoreBadge extends StatelessWidget {
     final theme = Theme.of(context);
     final color = AppTheme.getNutritionScoreColor(score);
     final label = AppTheme.getNutritionScoreLabel(score);
-    final scoreText = score.toStringAsFixed(1); // Afficher avec 1 décimale pour l'échelle 1-5
+    final scoreText =
+        score.toStringAsFixed(1); // Afficher avec 1 décimale pour l'échelle 1-5
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -30,14 +31,13 @@ class NutritionScoreBadge extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient:
-                useGradient
-                    ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [color.withOpacity(0.8), color],
-                    )
-                    : null,
+            gradient: useGradient
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color.withOpacity(0.8), color],
+                  )
+                : null,
             color: useGradient ? null : color,
             boxShadow: AppTheme.shadowSmall,
           ),

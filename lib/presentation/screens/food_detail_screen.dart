@@ -32,14 +32,15 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this); // Réduit de 3 à 2 onglets
+    _tabController =
+        TabController(length: 2, vsync: this); // Réduit de 3 à 2 onglets
     _scrollController.addListener(_onScroll);
 
     // Charger les détails de l'aliment
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<FoodDetailBloc>().add(
-        GetFoodDetailEvent(id: widget.foodId, source: widget.foodSource),
-      );
+            GetFoodDetailEvent(id: widget.foodId, source: widget.foodSource),
+          );
     });
   }
 
@@ -114,8 +115,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
               Text(
                 'Une erreur est survenue',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -128,11 +129,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
               ElevatedButton(
                 onPressed: () {
                   context.read<FoodDetailBloc>().add(
-                    GetFoodDetailEvent(
-                      id: widget.foodId,
-                      source: widget.foodSource,
-                    ),
-                  );
+                        GetFoodDetailEvent(
+                          id: widget.foodId,
+                          source: widget.foodSource,
+                        ),
+                      );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
@@ -154,10 +155,9 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
   Widget _buildDetailScreen(FoodItem food) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final sourceColor =
-        food.source == 'ciqual'
-            ? AppTheme.primaryColor
-            : AppTheme.secondaryColor;
+    final sourceColor = food.source == 'ciqual'
+        ? AppTheme.primaryColor
+        : AppTheme.secondaryColor;
 
     return Scaffold(
       body: NestedScrollView(
@@ -193,8 +193,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                     controller: _tabController,
                     indicatorColor: sourceColor,
                     labelColor: sourceColor,
-                    unselectedLabelColor: theme.colorScheme.onSurface
-                        .withOpacity(0.7),
+                    unselectedLabelColor:
+                        theme.colorScheme.onSurface.withOpacity(0.7),
                     tabs: const [
                       Tab(text: 'Résumé'),
                       Tab(text: 'Nutriments'),
@@ -241,32 +241,30 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           CachedNetworkImage(
             imageUrl: food.imageUrl,
             fit: BoxFit.cover,
-            placeholder:
-                (context, url) => Container(
-                  color: sourceColor,
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
+            placeholder: (context, url) => Container(
+              color: sourceColor,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
-            errorWidget:
-                (context, url, error) => Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [sourceColor.withOpacity(0.8), sourceColor],
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      food.isProcessed ? Icons.fastfood : Icons.eco,
-                      color: Colors.white.withOpacity(0.7),
-                      size: 60,
-                    ),
-                  ),
+              ),
+            ),
+            errorWidget: (context, url, error) => Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [sourceColor.withOpacity(0.8), sourceColor],
                 ),
+              ),
+              child: Center(
+                child: Icon(
+                  food.isProcessed ? Icons.fastfood : Icons.eco,
+                  color: Colors.white.withOpacity(0.7),
+                  size: 60,
+                ),
+              ),
+            ),
           ),
 
           // Dégradé pour assurer la lisibilité du texte
@@ -842,32 +840,31 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                       const Divider(height: 24),
                       ...((category['nutrients'] as List<Map<String, String>>)
                           .where(
-                            (nutrient) =>
-                                nutrient['value'] != null &&
-                                nutrient['value'] != '0' &&
-                                nutrient['value'] != '-',
-                          )
+                        (nutrient) =>
+                            nutrient['value'] != null &&
+                            nutrient['value'] != '0' &&
+                            nutrient['value'] != '-',
+                      )
                           .map((nutrient) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    nutrient['name']!,
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                  Text(
-                                    '${nutrient['value']} ${nutrient['unit']}',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                nutrient['name']!,
+                                style: textTheme.bodyMedium,
                               ),
-                            );
-                          })),
+                              Text(
+                                '${nutrient['value']} ${nutrient['unit']}',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      })),
                     ],
                   ),
                 ),
@@ -878,8 +875,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
       ),
     );
   }
-
-
 
   Widget _buildInfoRow(
     String label,
@@ -914,8 +909,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
       ],
     );
   }
-
-
 
   Widget _buildNutrientCircle(
     String label,

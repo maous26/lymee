@@ -600,10 +600,10 @@ class AppTheme {
   // Méthode utilitaire pour obtenir la couleur du score nutritionnel (échelle 1-5)
   static Color getNutritionScoreColor(double score) {
     if (score >= 4.5) return scoreExcellent; // 4.5-5: Excellent
-    if (score >= 3.5) return scoreGood;      // 3.5-4.5: Bon
-    if (score >= 2.5) return scoreMedium;    // 2.5-3.5: Moyen
-    if (score >= 1.5) return scorePoor;      // 1.5-2.5: Faible
-    return scoreBad;                         // 1-1.5: Mauvais
+    if (score >= 3.5) return scoreGood; // 3.5-4.5: Bon
+    if (score >= 2.5) return scoreMedium; // 2.5-3.5: Moyen
+    if (score >= 1.5) return scorePoor; // 1.5-2.5: Faible
+    return scoreBad; // 1-1.5: Mauvais
   }
 
   // Méthode utilitaire pour obtenir le label du score nutritionnel (échelle 1-5)

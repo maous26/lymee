@@ -126,7 +126,6 @@ class FoodRepositoryImpl implements FoodRepository {
       'pizza',
       'pain',
       'pâtes',
-      'riz',
       'soupe',
       'salade',
       'fromage',
@@ -143,9 +142,12 @@ class FoodRepositoryImpl implements FoodRepository {
       'lait'
     ];
 
+    // Pour "riz", on veut d'abord privilégier les produits de base CIQUAL
+    // donc on ne le considère pas comme un terme général
+    final String normalizedQuery = query.toLowerCase().trim();
+
     return generalTerms.any((term) =>
-        query.toLowerCase().contains(term) ||
-        term.contains(query.toLowerCase()));
+        normalizedQuery.contains(term) || term.contains(normalizedQuery));
   }
 
   /// Check if a food item is a basic/raw product (for single word searches)

@@ -58,28 +58,51 @@ class CiqualLocalDataSourceImpl implements CiqualLocalDataSource {
         return allFoods;
       }
 
-      // Filtrer les aliments selon la requête
-      // Recherche sur le nom, en ignorant la casse et les accents
+      // Filtrer les aliments selon la requête avec une logique de correspondance précise
       final String normalizedQuery = _normalizeString(query);
 
-      return allFoods.where((food) {
+      // Séparer les aliments par score de pertinence
+      List<MapEntry<CiqualFoodModel, int>> scoredFoods = [];
+
+      for (final food in allFoods) {
         final String normalizedName = _normalizeString(food.name);
+        int score = 0;
 
-        // Si la requête est un nom de catégorie, on retourne tous les aliments de cette catégorie
-        if (food.alimGrpNomFr != null &&
+        // Score 100: Correspondance exacte du nom
+        if (normalizedName == normalizedQuery) {
+          score = 100;
+        }
+        // Score 90: Le nom commence par la requête
+        else if (normalizedName.startsWith(normalizedQuery)) {
+          score = 90;
+        }
+        // Score 80: La requête est un mot entier dans le nom
+        else if (_containsWholeWord(normalizedName, normalizedQuery)) {
+          score = 80;
+        }
+        // Score 70: Correspondance dans la catégorie
+        else if (food.alimGrpNomFr != null &&
             _normalizeString(food.alimGrpNomFr!).contains(normalizedQuery)) {
-          return true;
+          score = 70;
         }
-
-        // Si la requête est un nom de sous-catégorie, on retourne tous les aliments de cette sous-catégorie
-        if (food.alimSsgrpNomFr != null &&
+        // Score 60: Correspondance dans la sous-catégorie
+        else if (food.alimSsgrpNomFr != null &&
             _normalizeString(food.alimSsgrpNomFr!).contains(normalizedQuery)) {
-          return true;
+          score = 60;
+        }
+        // Score 50: Correspondance partielle dans le nom
+        else if (normalizedName.contains(normalizedQuery)) {
+          score = 50;
         }
 
-        // Sinon, on cherche dans le nom de l'aliment
-        return normalizedName.contains(normalizedQuery);
-      }).toList();
+        if (score > 0) {
+          scoredFoods.add(MapEntry(food, score));
+        }
+      }
+
+      // Trier par score décroissant et retourner les aliments
+      scoredFoods.sort((a, b) => b.value.compareTo(a.value));
+      return scoredFoods.map((entry) => entry.key).toList();
     } on Exception catch (e) {
       throw CacheException(e.toString());
     }
@@ -144,6 +167,15 @@ class CiqualLocalDataSourceImpl implements CiqualLocalDataSource {
       throw CacheException(
           'Erreur lors de l\'effacement du cache CIQUAL: ${e.toString()}');
     }
+  }
+
+  // Fonction utilitaire pour vérifier si une requête correspond à un mot entier
+  bool _containsWholeWord(String text, String word) {
+    if (text.isEmpty || word.isEmpty) return false;
+
+    // Utilise des délimiteurs de mots (espaces, ponctuation, etc.)
+    final RegExp regex = RegExp(r'\b' + RegExp.escape(word) + r'\b');
+    return regex.hasMatch(text);
   }
 
   // Fonction utilitaire pour normaliser les chaînes (supprimer accents, mettre en minuscule)
