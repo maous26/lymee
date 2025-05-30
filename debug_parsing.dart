@@ -1,6 +1,4 @@
 // Debug script to test the entire OpenFoodFacts flow
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 
 // Simple debug test to verify the OpenFoodFacts parsing logic
 void main() {
@@ -34,7 +32,8 @@ void main() {
 
   // Test the parsing logic exactly as done in the app
   if (mockApiResponse.containsKey('products')) {
-    final List<dynamic> products = mockApiResponse['products'];
+    final List<dynamic> products =
+        List<dynamic>.from(mockApiResponse['products'] as List);
     print('Found ${products.length} products');
 
     if (products.isNotEmpty) {

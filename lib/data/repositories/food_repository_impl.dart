@@ -34,31 +34,239 @@ class FoodRepositoryImpl implements FoodRepository {
   @override
   Future<Either<Failure, List<FoodItem>>> searchFoods(String query,
       {String? brand}) async {
+    print('\n🔍 UNIFIED PRECISE SEARCH:');
+    print('  Query: "$query"');
+    print('  Brand: ${brand ?? "none"}');
+
     try {
-      // Recherche dans les deux sources
-      final freshFoodsResult = await searchFreshFoods(query);
-      final processedFoodsResult =
-          await searchProcessedFoods(query, brand: brand);
+      // New precise search logic
+      final results = await _performPreciseSearch(query, brand);
 
-      // Combiner les résultats
-      List<FoodItem> combinedResults = [];
-
-      freshFoodsResult.fold(
-        (failure) => null, // Ignorer les échecs ici
-        (freshFoods) => combinedResults.addAll(freshFoods),
-      );
-
-      processedFoodsResult.fold(
-        (failure) => null, // Ignorer les échecs ici
-        (processedFoods) => combinedResults.addAll(processedFoods),
-      );
-
-      // Filtrer les résultats selon les préférences alimentaires
-      final filteredResults = await filterFoodsByPreferences(combinedResults);
+      // Apply user preferences filtering
+      final filteredResults = await filterFoodsByPreferences(results);
 
       return filteredResults;
     } on Exception catch (e) {
       return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  /// Implements precise search logic with specific rules:
+  /// - "tomate" -> only tomatoes (raw CIQUAL products)
+  /// - "sauce tomate" -> tomato sauce products
+  /// - "sauce" -> all sauce products
+  /// - Brand searches work by brand name
+  Future<List<FoodItem>> _performPreciseSearch(
+      String query, String? brand) async {
+    print('  🎯 Applying precise search rules...');
+
+    if (query.isEmpty && brand == null) {
+      print('  ⚠️ Empty query, returning empty list');
+      return [];
+    }
+
+    List<FoodItem> results = [];
+
+    // Rule 1: Brand-only search - return all products from that brand
+    if (brand != null && brand.isNotEmpty && query.isEmpty) {
+      print('  📱 Brand-only search for: "$brand"');
+      final processedResults = await _searchProcessedByBrand(brand);
+      results.addAll(processedResults);
+      print('  🎯 Brand search result: ${results.length} products');
+      return results;
+    }
+
+    // Rule 2: Query contains multiple words - look for exact combinations
+    final queryWords = query.toLowerCase().trim().split(RegExp(r'\s+'));
+    print('  📝 Query words: $queryWords');
+
+    if (queryWords.length == 1) {
+      // Single word search - prioritize basic products
+      print('  🥕 Single word search - prioritizing basic products');
+
+      // First search in CIQUAL for basic products
+      final freshResults = await _searchFreshBasicProducts(query);
+      results.addAll(freshResults);
+      print('  📱 Basic products found: ${freshResults.length}');
+
+      // If query is a general term like "sauce", also search processed foods
+      if (_isGeneralTerm(query)) {
+        print('  🏭 General term detected - searching processed foods');
+        final processedResults = await _searchProcessedProducts(query, brand);
+        results.addAll(processedResults);
+        print('  🏭 Processed products found: ${processedResults.length}');
+      }
+    } else {
+      // Multi-word search - look for specific combinations
+      print('  🍕 Multi-word search - looking for specific combinations');
+
+      // Search both sources for exact combinations
+      final freshResults = await _searchFreshBasicProducts(query);
+      final processedResults = await _searchProcessedProducts(query, brand);
+
+      results.addAll(freshResults);
+      results.addAll(processedResults);
+
+      print('  📱 Fresh results: ${freshResults.length}');
+      print('  🏭 Processed results: ${processedResults.length}');
+    }
+
+    // Remove duplicates based on ID
+    final seen = <String>{};
+    results = results.where((food) => seen.add(food.id)).toList();
+
+    print('  ✅ Final results after deduplication: ${results.length}');
+    return results;
+  }
+
+  /// Check if a term is general (like "sauce", "pizza", etc.)
+  bool _isGeneralTerm(String query) {
+    final generalTerms = [
+      'sauce',
+      'pizza',
+      'pain',
+      'pâtes',
+      'riz',
+      'soupe',
+      'salade',
+      'fromage',
+      'yaourt',
+      'biscuit',
+      'chocolat',
+      'gâteau',
+      'tarte',
+      'jus',
+      'boisson',
+      'thé',
+      'café',
+      'eau',
+      'lait'
+    ];
+
+    return generalTerms.any((term) =>
+        query.toLowerCase().contains(term) ||
+        term.contains(query.toLowerCase()));
+  }
+
+  /// Check if a food item is a basic/raw product (for single word searches)
+  bool _isBasicProduct(FoodItem food) {
+    final String foodName = food.name.toLowerCase();
+    final String foodCategory = food.category.toLowerCase();
+
+    // Prioritize raw/basic keywords
+    final basicKeywords = [
+      'cru',
+      'crue',
+      'frais',
+      'fraiche',
+      'naturel',
+      'brut',
+      'entier',
+      'non transformé',
+      'nature',
+      'simple'
+    ];
+
+    for (String keyword in basicKeywords) {
+      if (foodName.contains(keyword)) {
+        return true;
+      }
+    }
+
+    // Exclude clearly processed products
+    final processedKeywords = [
+      'cuit',
+      'cuite',
+      'grillé',
+      'grillée',
+      'frit',
+      'frite',
+      'bouilli',
+      'bouillie',
+      'rôti',
+      'rôtie',
+      'préparé',
+      'préparée',
+      'transformé',
+      'transformée',
+      'industriel',
+      'industrielle',
+      'en conserve',
+      'surgelé',
+      'surgelée',
+      'poudre',
+      'concentré',
+      'extrait',
+      'sirop',
+      'confiture',
+      'compote',
+      'purée',
+      'sauce',
+      'crème',
+      'pâté',
+      'terrine'
+    ];
+
+    for (String keyword in processedKeywords) {
+      if (foodName.contains(keyword)) {
+        return false;
+      }
+    }
+
+    // Include basic categories by default (fruits, vegetables, etc.)
+    if (foodCategory.contains('fruits') ||
+        foodCategory.contains('légumes') ||
+        foodCategory.contains('légumineuses') ||
+        foodCategory.contains('oléagineux') ||
+        foodCategory.contains('céréales') ||
+        foodCategory.contains('viande') ||
+        foodCategory.contains('poisson')) {
+      return true;
+    }
+
+    // Default to basic if no processing indicators found
+    return true;
+  }
+
+  /// Search for basic/raw products in CIQUAL
+  Future<List<FoodItem>> _searchFreshBasicProducts(String query) async {
+    try {
+      final freshFoods = await ciqualLocalDataSource.searchFoods(query);
+      // Filter for basic products only
+      return freshFoods.where((food) => _isBasicProduct(food)).toList();
+    } catch (e) {
+      print('  ⚠️ Error searching fresh products: $e');
+      return [];
+    }
+  }
+
+  /// Search processed products with brand filtering
+  Future<List<FoodItem>> _searchProcessedProducts(
+      String query, String? brand) async {
+    try {
+      // Use the existing processed food search
+      final result = await searchProcessedFoods(query, brand: brand);
+      return result.fold(
+        (failure) => <FoodItem>[],
+        (foods) => foods,
+      );
+    } catch (e) {
+      print('  ⚠️ Error searching processed products: $e');
+      return [];
+    }
+  }
+
+  /// Search processed products by brand only
+  Future<List<FoodItem>> _searchProcessedByBrand(String brand) async {
+    try {
+      final result = await searchProcessedFoods('', brand: brand);
+      return result.fold(
+        (failure) => <FoodItem>[],
+        (foods) => foods,
+      );
+    } catch (e) {
+      print('  ⚠️ Error searching by brand: $e');
+      return [];
     }
   }
 

@@ -30,9 +30,9 @@ class OpenFoodFactsRemoteDataSourceImpl
   @override
   Future<List<OpenFoodFactsFoodModel>> searchFoods(String query,
       {String? brand}) async {
-    // Construction de l'URL de recherche
+    // Construction de l'URL de recherche avec filtre pour le marché français
     String url =
-        'https://world.openfoodfacts.org/cgi/search.pl?search_terms=${Uri.encodeComponent(query)}&json=1&page_size=50';
+        'https://world.openfoodfacts.org/cgi/search.pl?search_terms=${Uri.encodeComponent(query)}&json=1&page_size=50&countries=france';
 
     // Ajout du filtre par marque si spécifié
     if (brand != null && brand.isNotEmpty) {

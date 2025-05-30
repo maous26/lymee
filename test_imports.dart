@@ -13,5 +13,7 @@ void main() {
   print('FoodSearchBloc type: ${FoodSearchBloc}');
   print('FoodSearchEvent type: ${FoodSearchEvent}');
   print('FoodSearchState type: ${FoodSearchState}');
+  print('FoodDetailBloc type: ${FoodDetailBloc}');
+  print('FoodHistoryBloc type: ${FoodHistoryBloc}');
   print('GetFoodHistoryUseCase type: ${GetFoodHistoryUseCase}');
 }

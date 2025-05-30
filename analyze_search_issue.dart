@@ -1,8 +1,6 @@
 // Comprehensive test to trace the "thon" search issue
 // This simulates the exact app flow
 
-import 'dart:convert';
-
 void main() {
   print('🔍 Comprehensive "thon" search flow analysis\n');
 
@@ -18,7 +16,7 @@ void main() {
 
 void testAppFlow() {
   print('📱 Test 1: Simulating App Flow');
-  print('='.repeat(50));
+  print('=' * 50);
 
   // Step 1: Local search (empty initially)
   print('Step 1: Local search for "thon"');
@@ -46,7 +44,7 @@ void testAppFlow() {
 
 void testLogicFlow() {
   print('🧠 Test 2: Logic Flow Analysis');
-  print('='.repeat(50));
+  print('=' * 50);
 
   print('Current repository logic:');
   print('1. Search local cache for "thon"');
@@ -69,7 +67,7 @@ void testLogicFlow() {
 
 void testQueryVariations() {
   print('🌐 Test 3: Query Variations');
-  print('='.repeat(50));
+  print('=' * 50);
 
   final queries = ['thon', 'tuna', 'poisson', 'fish'];
 

@@ -8,7 +8,6 @@ import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_state.da
 import 'package:lym_nutrition/presentation/themes/app_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/nutrition_score_badge.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:lym_nutrition/data/models/openfoodfacts_food_model.dart';
 
 class FoodDetailScreen extends StatefulWidget {
   final String foodId;
@@ -33,7 +32,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this); // Réduit de 3 à 2 onglets
     _scrollController.addListener(_onScroll);
 
     // Charger les détails de l'aliment
@@ -199,7 +198,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                     tabs: const [
                       Tab(text: 'Résumé'),
                       Tab(text: 'Nutriments'),
-                      Tab(text: 'Détails'),
                     ],
                   ),
                 ),
@@ -215,9 +213,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
 
             // Onglet Nutriments
             _buildNutrientsTab(food, theme, textTheme),
-
-            // Onglet Détails
-            _buildDetailsTab(food, theme, textTheme),
           ],
         ),
       ),
@@ -884,97 +879,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     );
   }
 
-  Widget _buildDetailsTab(FoodItem food, ThemeData theme, TextTheme textTheme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Informations détaillées sur l'aliment
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.description,
-                        color: AppTheme.primaryColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Informations détaillées',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
 
-                  // Afficher les ingrédients si disponibles (OpenFoodFacts)
-                  if (food is OpenFoodFactsFoodModel &&
-                      food.ingredients != null &&
-                      food.ingredients!.isNotEmpty)
-                    _buildDetailSection(
-                      'Ingrédients',
-                      food.ingredients!.join(', '),
-                      Icons.receipt,
-                      theme,
-                    ),
-
-                  // Afficher les allergènes si disponibles (OpenFoodFacts)
-                  if (food is OpenFoodFactsFoodModel &&
-                      food.allergens != null &&
-                      food.allergens!.isNotEmpty)
-                    _buildDetailSection(
-                      'Allergènes',
-                      food.allergens!.join(', '),
-                      Icons.warning_amber,
-                      theme,
-                    ),
-
-                  // Afficher le Nutri-Score si disponible (OpenFoodFacts)
-                  if (food is OpenFoodFactsFoodModel && food.nutriscore != null)
-                    _buildDetailSection(
-                      'Nutri-Score',
-                      'Score ${food.nutriscore!.toUpperCase()}',
-                      Icons.grade,
-                      theme,
-                    ),
-
-                  // Afficher l'identifiant
-                  _buildDetailSection(
-                    'Identifiant',
-                    food.id,
-                    Icons.qr_code,
-                    theme,
-                  ),
-
-                  // Afficher la source
-                  _buildDetailSection(
-                    'Source de données',
-                    food.source == 'ciqual'
-                        ? 'Base CIQUAL (Agence nationale de sécurité sanitaire de l\'alimentation)'
-                        : 'OpenFoodFacts (Base collaborative de produits alimentaires)',
-                    Icons.source,
-                    theme,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildInfoRow(
     String label,
@@ -1010,38 +915,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     );
   }
 
-  Widget _buildDetailSection(
-    String title,
-    String content,
-    IconData icon,
-    ThemeData theme,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: AppTheme.primaryColor),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 26),
-            child: Text(content, style: theme.textTheme.bodyMedium),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildNutrientCircle(
     String label,

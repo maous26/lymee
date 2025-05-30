@@ -98,28 +98,28 @@ class CiqualFoodModel extends FoodItem {
 
   static double _calculateNutritionScore(Map<String, dynamic> json) {
     // Implémentation simplifiée du score nutritionnel basé sur les recommandations OMS
-    // Score de 0 à 100, où 100 est excellent
-    double score = 50.0; // Score de base
+    // Score de 1 à 5, où 5 est excellent
+    double score = 3.0; // Score de base (moyen)
     
     // Bonus pour protéines
     double proteins = _getDoubleValue(json, 'Protéines, N x facteur de Jones (g/100 g)');
-    score += proteins * 2;
+    score += proteins * 0.02; // Facteur réduit pour échelle 1-5
     
     // Bonus pour fibres
     double fibers = _getDoubleValue(json, 'Fibres alimentaires (g/100 g)');
-    score += fibers * 3;
+    score += fibers * 0.03; // Facteur réduit pour échelle 1-5
     
     // Malus pour sucres
     double sugars = _getDoubleValue(json, 'Sucres (g/100 g)');
-    score -= sugars * 1.5;
+    score -= sugars * 0.015; // Facteur réduit pour échelle 1-5
     
     // Malus pour graisses saturées
     double saturatedFats = _getDoubleValue(json, 'AG saturés (g/100 g)');
-    score -= saturatedFats * 2;
+    score -= saturatedFats * 0.02; // Facteur réduit pour échelle 1-5
     
     // Malus pour sel
     double salt = _getDoubleValue(json, 'Sel chlorure de sodium (g/100 g)');
-    score -= salt * 5;
+    score -= salt * 0.5; // Facteur réduit pour échelle 1-5
     
     // Bonus pour vitamines et minéraux
     // Simplification: on compte juste les présences de vitamines/minéraux
@@ -135,10 +135,10 @@ class CiqualFoodModel extends FoodItem {
         }
       }
     }
-    score += nutrientCount * 1.5;
+    score += nutrientCount * 0.05; // Facteur réduit pour échelle 1-5
     
-    // Limiter le score entre 0 et 100
-    return score.clamp(0.0, 100.0);
+    // Limiter le score entre 1 et 5
+    return score.clamp(1.0, 5.0);
   }
 }
 

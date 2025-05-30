@@ -20,7 +20,7 @@ class NutritionScoreBadge extends StatelessWidget {
     final theme = Theme.of(context);
     final color = AppTheme.getNutritionScoreColor(score);
     final label = AppTheme.getNutritionScoreLabel(score);
-    final scoreText = score.round().toString();
+    final scoreText = score.toStringAsFixed(1); // Afficher avec 1 décimale pour l'échelle 1-5
 
     return Column(
       mainAxisSize: MainAxisSize.min,

@@ -10,7 +10,7 @@ void main() {
 
 void testFixedFlow() {
   print('✅ Test 1: Fixed Flow for "thon" search');
-  print('='.repeat(60));
+  print('=' * 60);
 
   print('Step 1: Local search for "thon"');
   final localResults = simulateLocalSearch('thon', []);
@@ -48,7 +48,7 @@ void testFixedFlow() {
 
 void testEdgeCases() {
   print('🧪 Test 2: Edge Cases');
-  print('='.repeat(60));
+  print('=' * 60);
 
   // Test case 1: Query with different casing
   print('Test 2a: Case sensitivity');

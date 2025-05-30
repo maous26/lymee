@@ -122,50 +122,50 @@ class OpenFoodFactsFoodModel extends FoodItem {
   }
 
   static double _calculateNutritionScore(Map<String, dynamic> product) {
-    // Utilisation du Nutri-Score si disponible
+    // Utilisation du Nutri-Score si disponible - conversion vers échelle 1-5
     String? nutriscoreGrade = product['nutriscore_grade'];
     if (nutriscoreGrade != null) {
       switch (nutriscoreGrade.toLowerCase()) {
         case 'a':
-          return 90.0;
+          return 5.0; // Excellent
         case 'b':
-          return 70.0;
+          return 4.0; // Bon
         case 'c':
-          return 50.0;
+          return 3.0; // Moyen
         case 'd':
-          return 30.0;
+          return 2.0; // Faible
         case 'e':
-          return 10.0;
+          return 1.0; // Mauvais
       }
     }
 
-    // Calcul simplifié si pas de Nutri-Score
+    // Calcul simplifié si pas de Nutri-Score - conversion vers échelle 1-5
     Map<String, dynamic> nutrients = product['nutriments'] ?? {};
 
-    double score = 50.0; // Score de base
+    double score = 3.0; // Score de base (moyen)
 
     // Bonus pour protéines
     double proteins = _getDoubleValue(nutrients, 'proteins_100g') ?? 0;
-    score += proteins * 2;
+    score += proteins * 0.02; // Facteur réduit pour échelle 1-5
 
     // Bonus pour fibres
     double fibers = _getDoubleValue(nutrients, 'fiber_100g') ?? 0;
-    score += fibers * 3;
+    score += fibers * 0.03; // Facteur réduit pour échelle 1-5
 
     // Malus pour sucres
     double sugars = _getDoubleValue(nutrients, 'sugars_100g') ?? 0;
-    score -= sugars * 1.5;
+    score -= sugars * 0.015; // Facteur réduit pour échelle 1-5
 
     // Malus pour graisses saturées
     double saturatedFats =
         _getDoubleValue(nutrients, 'saturated-fat_100g') ?? 0;
-    score -= saturatedFats * 2;
+    score -= saturatedFats * 0.02; // Facteur réduit pour échelle 1-5
 
     // Malus pour sel
     double salt = _getDoubleValue(nutrients, 'salt_100g') ?? 0;
-    score -= salt * 5;
+    score -= salt * 0.5; // Facteur réduit pour échelle 1-5
 
-    // Limiter le score entre 0 et 100
-    return score.clamp(0.0, 100.0);
+    // Limiter le score entre 1 et 5
+    return score.clamp(1.0, 5.0);
   }
 }

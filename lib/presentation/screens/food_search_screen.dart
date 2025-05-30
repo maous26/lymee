@@ -21,18 +21,14 @@ class FoodSearchScreen extends StatefulWidget {
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
 }
 
-class _FoodSearchScreenState extends State<FoodSearchScreen>
-    with SingleTickerProviderStateMixin {
+class _FoodSearchScreenState extends State<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  late TabController _tabController;
   bool _searchBarVisible = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(_handleTabChange);
 
     // Charger l'historique au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -44,17 +40,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _tabController.removeListener(_handleTabChange);
-    _tabController.dispose();
     super.dispose();
-  }
-
-  void _handleTabChange() {
-    // Si on change d'onglet, exécuter la recherche avec le filtre approprié
-    if (_tabController.indexIsChanging ||
-        _tabController.index != _tabController.previousIndex) {
-      _performSearch(_searchController.text);
-    }
   }
 
   void _performSearch(String query) {
@@ -63,19 +49,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
       return;
     }
 
-    switch (_tabController.index) {
-      case 0: // Tous
-        context.read<FoodSearchBloc>().add(SearchAllFoodsEvent(query: query));
-        break;
-      case 1: // Frais
-        context.read<FoodSearchBloc>().add(SearchFreshFoodsEvent(query: query));
-        break;
-      case 2: // Transformés
-        context
-            .read<FoodSearchBloc>()
-            .add(SearchProcessedFoodsEvent(query: query));
-        break;
-    }
+    // Use unified search - no more tabs
+    context.read<FoodSearchBloc>().add(SearchAllFoodsEvent(query: query));
   }
 
   void _clearSearch() {
@@ -167,24 +142,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(48),
-                child: ColoredBox(
-                  color: theme.scaffoldBackgroundColor,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: AppTheme.primaryColor,
-                    labelColor: AppTheme.primaryColor,
-                    unselectedLabelColor:
-                        theme.colorScheme.onSurface.withOpacity(0.7),
-                    tabs: const [
-                      Tab(text: 'Tous'),
-                      Tab(text: 'Frais'),
-                      Tab(text: 'Transformés'),
-                    ],
                   ),
                 ),
               ),
