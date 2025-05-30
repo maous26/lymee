@@ -877,7 +877,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
       var value = food.nutrients['AG saturés (g/100 g)'];
       if (value is String) {
         if (value.startsWith('<')) {
-          return double.tryParse(value.substring(1).trim())! / 2;
+          return (double.tryParse(value.substring(1).trim()) ?? 0.0) / 2;
         }
         return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
       }
@@ -1348,55 +1348,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
         ),
         const SizedBox(height: 8),
         Text(label, style: theme.textTheme.bodySmall),
-      ],
-    );
-  }
-
-  Widget _buildNutrientBar(
-    String label,
-    String value,
-    String unit,
-    Color color,
-    ThemeData theme,
-  ) {
-    return Row(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 4),
-            Container(
-              width: 120,
-              height: 24,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
-                color: color.withOpacity(0.1),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(
-                        AppTheme.borderRadiusSmall,
-                      ),
-                      color: color.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '$value $unit',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
       ],
     );
   }
