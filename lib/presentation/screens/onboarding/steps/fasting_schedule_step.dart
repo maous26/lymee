@@ -164,6 +164,25 @@ class _FastingScheduleStepState extends State<FastingScheduleStep> {
     widget.onNext();
   }
 
+  String _getFastingTypeLabel(IntermittentFastingType type) {
+    switch (type) {
+      case IntermittentFastingType.none:
+        return 'Aucun jeûne';
+      case IntermittentFastingType.fasting16_8:
+        return 'Jeûne 16/8';
+      case IntermittentFastingType.fasting18_6:
+        return 'Jeûne 18/6';
+      case IntermittentFastingType.fasting20_4:
+        return 'Jeûne 20/4';
+      case IntermittentFastingType.fasting5_2:
+        return 'Jeûne 5:2';
+      case IntermittentFastingType.alternateDay:
+        return 'Jeûne alterné';
+      case IntermittentFastingType.custom:
+        return 'Personnalisé';
+    }
+  }
+
   String _getFastingTypeDescription(IntermittentFastingType type) {
     switch (type) {
       case IntermittentFastingType.none:
@@ -211,7 +230,7 @@ class _FastingScheduleStepState extends State<FastingScheduleStep> {
               children: IntermittentFastingType.values.map((type) {
                 return RadioListTile<IntermittentFastingType>(
                   title: Text(
-                    type.toString().split('.').last,
+                    _getFastingTypeLabel(type),
                     style: TextStyle(
                       fontWeight: _fastingSchedule.type == type
                           ? FontWeight.bold

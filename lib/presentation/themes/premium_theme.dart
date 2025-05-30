@@ -5,9 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 class PremiumTheme {
   // Couleurs principales - Nouvelle palette sophistiquée avec orange en principal
-  static const Color primaryLight = Color(0xFFFF8F00); // Orange vif - nouvelle couleur principale
+  static const Color primaryLight =
+      Color(0xFFFF8F00); // Orange vif - nouvelle couleur principale
   static const Color primaryDark = Color(0xFFE65100); // Orange profond
-  static const Color secondaryLight = Color(0xFF26A69A); // Vert teal - ancienne couleur principale
+  static const Color secondaryLight =
+      Color(0xFF26A69A); // Vert teal - ancienne couleur principale
   static const Color secondaryDark = Color(0xFF00766C); // Vert teal foncé
   static const Color techColor = Color(0xFF7E57C2); // Violet technologique
   static const Color techColorDark = Color(0xFF5E35B1); // Violet tech foncé

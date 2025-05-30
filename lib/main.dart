@@ -13,7 +13,7 @@ import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_state.
 import 'package:lym_nutrition/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:lym_nutrition/presentation/screens/nutrition_dashboard_screen.dart';
 import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/wellness_theme.dart';
 
 void main() async {
   // Assurer que les widgets Flutter sont initialisés
@@ -62,8 +62,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Lym Nutrition',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
+        theme: WellnessTheme.lightTheme,
+        darkTheme: WellnessTheme.lightTheme, // Utiliser le même thème pour l'instant
         themeMode: ThemeMode.system,
         home: const SplashScreen(),
         routes: {

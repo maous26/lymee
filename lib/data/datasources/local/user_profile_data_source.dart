@@ -80,7 +80,13 @@ class UserProfileDataSourceImpl implements UserProfileDataSource {
 
   /// Vérifie si l'utilisateur a terminé l'onboarding
   Future<bool> hasCompletedOnboarding() async {
-    return sharedPreferences.getBool(HAS_COMPLETED_ONBOARDING_KEY) ?? false;
+    // TESTING MODE: Always return false to reset onboarding on each app launch
+    // This forces the onboarding to restart every time for testing purposes
+    // TODO: Remove this when moving to production
+    return false;
+
+    // Original implementation (commented out for testing):
+    // return sharedPreferences.getBool(HAS_COMPLETED_ONBOARDING_KEY) ?? false;
   }
 
   /// Réinitialise le profil utilisateur et le statut d'onboarding

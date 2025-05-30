@@ -7,8 +7,13 @@ import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_event.
 import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_state.dart';
 import 'package:lym_nutrition/presentation/screens/food_search_screen.dart';
 import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/wellness_colors.dart';
 import 'package:lym_nutrition/presentation/widgets/macro_nutrients_chart.dart';
 import 'package:lym_nutrition/presentation/widgets/nutrition_target_card.dart';
+import 'package:lym_nutrition/presentation/widgets/wellness_dashboard_header.dart';
+import 'package:lym_nutrition/presentation/widgets/achievement_badge.dart';
+import 'package:lym_nutrition/presentation/widgets/level_progression.dart';
+import 'package:lym_nutrition/presentation/widgets/progress_charts.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:percent_indicator/percent_indicator.dart';
@@ -119,56 +124,16 @@ class _NutritionDashboardScreenState extends State<NutritionDashboardScreen> {
     return NestedScrollView(
       headerSliverBuilder: (context, innerBoxIsScrolled) {
         return [
-          SliverAppBar(
-            expandedHeight: 180,
-            floating: false,
-            pinned: true,
-            backgroundColor: PremiumTheme.primaryColor,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'Bonjour${userProfile.name != null ? ', ${userProfile.name}' : ''}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      PremiumTheme.primaryDarkColor,
-                      PremiumTheme.primaryColor,
-                    ],
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Tableau de bord nutritionnel',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Suivez votre alimentation et atteignez vos objectifs',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+          SliverToBoxAdapter(
+            child: WellnessDashboardHeader(
+              userName: userProfile.name ?? 'Utilisateur',
+              dailyProgress: caloriesPercent,
+              caloriesConsumed: dailyCaloriesConsumed.round(),
+              caloriesGoal: macros['calories']?.round() ?? 2000,
+              streakDays: _calculateDailyStreak(),
+              onAiAssistantTap: () {
+                _showAIAssistant(context);
+              },
             ),
           ),
         ];
@@ -178,6 +143,189 @@ class _NutritionDashboardScreenState extends State<NutritionDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Level Progression & Achievements Section
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.military_tech,
+                          color: WellnessColors.primaryGreen,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Progression & Achievements',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: WellnessColors.primaryGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Level Progression
+                    LevelProgressWidget(
+                      currentLevel: _calculateCurrentLevel(
+                          dailyCaloriesConsumed, macros['calories'] ?? 2000),
+                      currentXP: _calculateCurrentXP(dailyCaloriesConsumed),
+                      xpToNextLevel: _calculateNextLevelXP(
+                          _calculateCurrentLevel(dailyCaloriesConsumed,
+                              macros['calories'] ?? 2000)),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Recent Achievements
+                    Text(
+                      'Achievements récents',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _getRecentAchievements(dailyCaloriesConsumed,
+                                macros, dailyWaterConsumed)
+                            .map((achievement) => Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: AchievementBadge(
+                                    title: achievement.title,
+                                    description: achievement.description,
+                                    icon: achievement.icon,
+                                    color: achievement.color,
+                                    isEarned: true,
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Modern Progress Charts Section
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.analytics,
+                          color: WellnessColors.secondaryBlue,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Analyses nutritionnelles',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: WellnessColors.secondaryBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Nutrition Progress Charts
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: NutritionProgressChart(
+                            label: 'Protéines',
+                            value: dailyProteinConsumed,
+                            target: macros['protein'] ?? 150,
+                            unit: 'g',
+                            color: WellnessColors.primaryGreen,
+                            icon: Icons.fitness_center,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: NutritionProgressChart(
+                            label: 'Glucides',
+                            value: dailyCarbsConsumed,
+                            target: macros['carbs'] ?? 250,
+                            unit: 'g',
+                            color: WellnessColors.sunsetOrange,
+                            icon: Icons.grain,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: NutritionProgressChart(
+                            label: 'Lipides',
+                            value: dailyFatConsumed,
+                            target: macros['fat'] ?? 75,
+                            unit: 'g',
+                            color: WellnessColors.errorCoral,
+                            icon: Icons.opacity,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Hydration Progress with animated wave
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.water_drop,
+                          color: WellnessColors.secondaryBlue,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Hydratation',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: WellnessColors.secondaryBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      height: 120,
+                      child: HydrationWaveProgress(
+                        currentAmount: dailyWaterConsumed,
+                        targetAmount: 2500,
+                        unit: 'ml',
+                        height: 120,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Affichage du jeûne intermittent (si activé)
             if (userProfile.fastingSchedule.type !=
                 IntermittentFastingType.none)
@@ -237,12 +385,15 @@ class _NutritionDashboardScreenState extends State<NutritionDashboardScreen> {
                       LinearPercentIndicator(
                         lineHeight: 8,
                         percent: (isFasting
-                            ? 1 -
-                                (hoursUntilFastingEnds /
-                                    userProfile.fastingSchedule.fastingHours)
-                            : 1 -
-                                (hoursUntilFastingStarts /
-                                    userProfile.fastingSchedule.eatingHours)).clamp(0.0, 1.0),
+                                ? 1 -
+                                    (hoursUntilFastingEnds /
+                                        userProfile
+                                            .fastingSchedule.fastingHours)
+                                : 1 -
+                                    (hoursUntilFastingStarts /
+                                        userProfile
+                                            .fastingSchedule.eatingHours))
+                            .clamp(0.0, 1.0),
                         backgroundColor: Colors.grey.withOpacity(0.2),
                         progressColor: isFasting
                             ? PremiumTheme.primaryColor
@@ -676,5 +827,128 @@ class _NutritionDashboardScreenState extends State<NutritionDashboardScreen> {
       case WeightGoal.gain:
         return 'pour prendre du poids';
     }
+  }
+
+  // Gamification helper methods
+  int _calculateDailyStreak() {
+    // TODO: Calculate actual daily streak based on user activity
+    // For now, return a placeholder value
+    return 5; // 5-day streak
+  }
+
+  int _calculateCurrentLevel(double caloriesConsumed, double caloriesGoal) {
+    // Calculate level based on daily goal achievement
+    final progressPercent = (caloriesConsumed / caloriesGoal).clamp(0.0, 1.0);
+    return (progressPercent * 10).floor() + 1; // Levels 1-10
+  }
+
+  int _calculateCurrentXP(double caloriesConsumed) {
+    // Convert calories to XP (1 calorie = 1 XP)
+    return caloriesConsumed.round();
+  }
+
+  int _calculateNextLevelXP(int currentLevel) {
+    // XP needed for next level (exponential growth)
+    return currentLevel * 500; // 500, 1000, 1500, etc.
+  }
+
+  List<Achievement> _getRecentAchievements(double caloriesConsumed,
+      Map<String, double> macros, double waterConsumed) {
+    List<Achievement> achievements = [];
+
+    // Check for calorie achievement
+    if (caloriesConsumed >= (macros['calories'] ?? 2000) * 0.8) {
+      achievements
+          .add(AchievementDefinitions.achievements[0]); // First meal logged
+    }
+
+    // Check for hydration achievement
+    if (waterConsumed >= 2000) {
+      achievements
+          .add(AchievementDefinitions.achievements[2]); // Hydration Hero
+    }
+
+    // Add weekly streak if applicable
+    if (_calculateDailyStreak() >= 7) {
+      achievements.add(AchievementDefinitions.achievements[1]); // Healthy week
+    }
+
+    // Limit to 3 recent achievements
+    return achievements.take(3).toList();
+  }
+
+  void _showAIAssistant(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.psychology,
+                    color: WellnessColors.primaryGreen,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Assistant IA Nutritionnel',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: WellnessColors.primaryGreen,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.smart_toy,
+                      size: 80,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Assistant IA bientôt disponible',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Votre coach personnel pour des conseils nutritionnels personnalisés',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey.shade600,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

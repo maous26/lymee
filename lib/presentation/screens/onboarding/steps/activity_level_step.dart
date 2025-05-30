@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:lym_nutrition/domain/entities/user_profile.dart';
 import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/onboarding_step_container.dart';
+import 'package:lym_nutrition/data/sports_data.dart';
 
 class ActivityLevelStep extends StatefulWidget {
   final UserProfile userProfile;
@@ -25,24 +26,62 @@ class _ActivityLevelStepState extends State<ActivityLevelStep> {
   ActivityLevel _selectedActivityLevel = ActivityLevel.moderatelyActive;
   List<UserSportActivity> _sportActivities = [];
   bool _showAddActivityForm = false;
-  final _sportNameController = TextEditingController();
+  final _sportSearchController = TextEditingController();
   final _minutesController = TextEditingController();
   final _sessionsController = TextEditingController();
   SportIntensity _selectedIntensity = SportIntensity.medium;
+  SportData? _selectedSport;
+  List<SportData> _filteredSports = [];
+  String _selectedCategory = 'Tous';
+  bool _showSportsList = false;
 
   @override
   void initState() {
     super.initState();
     _selectedActivityLevel = widget.userProfile.activityLevel;
     _sportActivities = List.from(widget.userProfile.sportActivities);
+    _filteredSports = SportsDatabase.sports;
   }
 
   @override
   void dispose() {
-    _sportNameController.dispose();
+    _sportSearchController.dispose();
     _minutesController.dispose();
     _sessionsController.dispose();
     super.dispose();
+  }
+
+  void _filterSports(String query) {
+    setState(() {
+      if (query.isEmpty && _selectedCategory == 'Tous') {
+        _filteredSports = SportsDatabase.sports;
+      } else if (query.isEmpty) {
+        _filteredSports = SportsDatabase.getSportsByCategory(_selectedCategory);
+      } else {
+        _filteredSports = SportsDatabase.searchSports(query);
+        if (_selectedCategory != 'Tous') {
+          _filteredSports = _filteredSports
+              .where((sport) => sport.category == _selectedCategory)
+              .toList();
+        }
+      }
+    });
+  }
+
+  void _onCategoryChanged(String category) {
+    setState(() {
+      _selectedCategory = category;
+      _filterSports(_sportSearchController.text);
+    });
+  }
+
+  void _selectSport(SportData sport) {
+    setState(() {
+      _selectedSport = sport;
+      _sportSearchController.text = sport.name;
+      _selectedIntensity = sport.recommendedIntensity;
+      _showSportsList = false;
+    });
   }
 
   void _toggleAddActivityForm() {
@@ -50,22 +89,25 @@ class _ActivityLevelStepState extends State<ActivityLevelStep> {
       _showAddActivityForm = !_showAddActivityForm;
       if (_showAddActivityForm) {
         // Réinitialiser le formulaire
-        _sportNameController.clear();
+        _sportSearchController.clear();
         _minutesController.text = "30";
         _sessionsController.text = "3";
         _selectedIntensity = SportIntensity.medium;
+        _selectedSport = null;
+        _showSportsList = false;
+        _filteredSports = SportsDatabase.sports;
       }
     });
   }
 
   void _addSportActivity() {
-    if (_sportNameController.text.isEmpty ||
+    if (_selectedSport == null ||
         _minutesController.text.isEmpty ||
         _sessionsController.text.isEmpty) {
       // Afficher un message d'erreur
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez remplir tous les champs'),
+          content: Text('Veuillez sélectionner un sport et remplir tous les champs'),
           backgroundColor: PremiumTheme.error,
         ),
       );
@@ -73,7 +115,7 @@ class _ActivityLevelStepState extends State<ActivityLevelStep> {
     }
 
     final newActivity = UserSportActivity(
-      name: _sportNameController.text,
+      name: _selectedSport!.name,
       intensity: _selectedIntensity,
       minutesPerSession: int.parse(_minutesController.text),
       sessionsPerWeek: int.parse(_sessionsController.text),
@@ -142,6 +184,19 @@ class _ActivityLevelStepState extends State<ActivityLevelStep> {
         return 'Élevée (course, HIIT, musculation)';
       case SportIntensity.extreme:
         return 'Extrême (compétition, crossfit intense)';
+    }
+  }
+
+  String _getIntensityLabel(SportIntensity intensity) {
+    switch (intensity) {
+      case SportIntensity.low:
+        return 'Faible';
+      case SportIntensity.medium:
+        return 'Moyenne';
+      case SportIntensity.high:
+        return 'Élevée';
+      case SportIntensity.extreme:
+        return 'Extrême';
     }
   }
 
@@ -241,15 +296,165 @@ class _ActivityLevelStepState extends State<ActivityLevelStep> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextFormField(
-                      controller: _sportNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nom de l\'activité',
-                        hintText: 'Ex: Course, Natation, Yoga...',
-                        prefixIcon: Icon(Icons.sports),
-                      ),
-                      textCapitalization: TextCapitalization.sentences,
+                    // Sport selection with search
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: _sportSearchController,
+                          decoration: InputDecoration(
+                            labelText: 'Rechercher un sport',
+                            hintText: 'Ex: Course, Natation, Yoga...',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _selectedSport != null
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _selectedSport!.icon,
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedSport = null;
+                                            _sportSearchController.clear();
+                                            _showSportsList = false;
+                                          });
+                                        },
+                                        child: const Icon(Icons.clear),
+                                      ),
+                                    ],
+                                  )
+                                : IconButton(
+                                    icon: Icon(_showSportsList
+                                        ? Icons.keyboard_arrow_up
+                                        : Icons.keyboard_arrow_down),
+                                    onPressed: () {
+                                      setState(() {
+                                        _showSportsList = !_showSportsList;
+                                        if (_showSportsList) {
+                                          _filterSports(_sportSearchController.text);
+                                        }
+                                      });
+                                    },
+                                  ),
+                          ),
+                          textCapitalization: TextCapitalization.sentences,
+                          onChanged: (value) {
+                            _filterSports(value);
+                            setState(() {
+                              _showSportsList = value.isNotEmpty || _showSportsList;
+                            });
+                          },
+                          onTap: () {
+                            setState(() {
+                              _showSportsList = true;
+                              _filterSports(_sportSearchController.text);
+                            });
+                          },
+                        ),
+
+                        // Category filter
+                        if (_showSportsList) ...[
+                          const SizedBox(height: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                'Tous',
+                                ...SportsDatabase.getAllCategories(),
+                              ].map((category) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    label: Text(category),
+                                    selected: _selectedCategory == category,
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        _onCategoryChanged(category);
+                                      }
+                                    },
+                                    selectedColor: PremiumTheme.primaryColor.withOpacity(0.2),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+
+                        // Sports list
+                        if (_showSportsList && _filteredSports.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _filteredSports.length,
+                              itemBuilder: (context, index) {
+                                final sport = _filteredSports[index];
+                                return ListTile(
+                                  dense: true,
+                                  leading: Text(
+                                    sport.icon,
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
+                                  title: Text(sport.name),
+                                  subtitle: Text(sport.category),
+                                  trailing: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: _getIntensityColor(sport.recommendedIntensity)
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _getIntensityColor(sport.recommendedIntensity),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _getIntensityLabel(sport.recommendedIntensity),
+                                      style: TextStyle(
+                                        color: _getIntensityColor(sport.recommendedIntensity),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  onTap: () => _selectSport(sport),
+                                );
+                              },
+                            ),
+                          ),
+
+                        if (_showSportsList && _filteredSports.isEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Aucun sport trouvé.\nEssayez une autre recherche.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
+
                     const SizedBox(height: 16),
                     Text(
                       'Intensité',
@@ -358,18 +563,45 @@ class _ActivityLevelStepState extends State<ActivityLevelStep> {
               itemCount: _sportActivities.length,
               itemBuilder: (context, index) {
                 final activity = _sportActivities[index];
+                final sportData = SportsDatabase.getSportByName(activity.name);
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: _getIntensityColor(activity.intensity)
                           .withOpacity(0.2),
-                      child: Icon(
-                        Icons.sports,
-                        color: _getIntensityColor(activity.intensity),
-                      ),
+                      child: sportData != null
+                          ? Text(
+                              sportData.icon,
+                              style: const TextStyle(fontSize: 20),
+                            )
+                          : Icon(
+                              Icons.sports,
+                              color: _getIntensityColor(activity.intensity),
+                            ),
                     ),
-                    title: Text(activity.name),
+                    title: Row(
+                      children: [
+                        Expanded(child: Text(activity.name)),
+                        if (sportData != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              sportData.category,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     subtitle: Text(
                       '${_getIntensityDescription(activity.intensity)}\n'
                       '${activity.minutesPerSession} min × ${activity.sessionsPerWeek} fois/semaine',

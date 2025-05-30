@@ -295,10 +295,12 @@ class SummaryStep extends StatelessWidget {
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Confidentialité',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        'Confidentialité',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -344,11 +346,13 @@ class SummaryStep extends StatelessWidget {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: effectiveColor,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: effectiveColor,
+                    ),
                   ),
                 ),
               ],
@@ -367,14 +371,16 @@ class SummaryStep extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
+          Flexible(
+            flex: 2,
             child: Text(
               label,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
-          Expanded(
+          const SizedBox(width: 8),
+          Flexible(
+            flex: 3,
             child: Text(value),
           ),
         ],
@@ -422,25 +428,33 @@ class SummaryStep extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNutrientCircle(
-              'Protéines',
-              '$protein g',
-              Colors.blue,
+            Expanded(
+              child: _buildNutrientCircle(
+                'Protéines',
+                '$protein g',
+                Colors.blue,
+              ),
             ),
-            _buildNutrientCircle(
-              'Glucides',
-              '$carbs g',
-              Colors.orange,
+            Expanded(
+              child: _buildNutrientCircle(
+                'Glucides',
+                '$carbs g',
+                Colors.orange,
+              ),
             ),
-            _buildNutrientCircle(
-              'Lipides',
-              '$fat g',
-              Colors.red,
+            Expanded(
+              child: _buildNutrientCircle(
+                'Lipides',
+                '$fat g',
+                Colors.red,
+              ),
             ),
-            _buildNutrientCircle(
-              'Fibres',
-              '$fiber g',
-              Colors.green,
+            Expanded(
+              child: _buildNutrientCircle(
+                'Fibres',
+                '$fiber g',
+                Colors.green,
+              ),
             ),
           ],
         ),
@@ -465,8 +479,8 @@ class SummaryStep extends StatelessWidget {
     return Column(
       children: [
         Container(
-          width: 60,
-          height: 60,
+          width: 50,
+          height: 50,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color.withOpacity(0.1),
@@ -481,6 +495,7 @@ class SummaryStep extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: color,
+                fontSize: 10,
               ),
             ),
           ),
@@ -488,7 +503,8 @@ class SummaryStep extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 10),
+          textAlign: TextAlign.center,
         ),
       ],
     );
