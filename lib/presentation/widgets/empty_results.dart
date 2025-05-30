@@ -1,7 +1,7 @@
 // lib/presentation/widgets/empty_results.dart
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 
 class EmptyResults extends StatelessWidget {
   final String message;
@@ -27,7 +27,7 @@ class EmptyResults extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final iconColor = color ?? AppTheme.primaryColor;
+    final iconColor = color ?? PremiumTheme.primaryColor;
 
     return Center(
       child: Padding(

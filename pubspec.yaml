@@ -35,6 +35,8 @@ dependencies:
   shimmer: ^3.0.0
   flutter_animate: ^4.2.0
   font_awesome_flutter: ^10.4.0
+  percent_indicator: ^4.2.3
+  fl_chart: ^0.68.0
   
   # Internationalisation
   intl: ^0.18.1
@@ -43,6 +45,7 @@ dependencies:
   json_annotation: ^4.8.1
   collection: ^1.17.1
   logger: ^2.0.1
+  uuid: ^4.4.2
 
 dev_dependencies:
   flutter_test:

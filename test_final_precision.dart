@@ -1,5 +1,3 @@
-import 'dart:io';
-
 void main() async {
   print('🧪 FINAL TEST: Search Precision for "riz" vs "blé"');
   print('=' * 50);

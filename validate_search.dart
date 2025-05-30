@@ -1,7 +1,6 @@
 #!/usr/bin/env dart
 // Validation script for unified search functionality
 
-import 'package:flutter/services.dart';
 import 'package:lym_nutrition/injection_container.dart' as di;
 import 'package:lym_nutrition/domain/repositories/food_repository.dart';
 

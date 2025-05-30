@@ -1,7 +1,6 @@
 #!/usr/bin/env dart
 // Test script for the new unified search functionality
 
-import 'package:lym_nutrition/main.dart' as app;
 import 'package:lym_nutrition/injection_container.dart' as di;
 import 'package:lym_nutrition/domain/repositories/food_repository.dart';
 

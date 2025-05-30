@@ -1,6 +1,6 @@
 // lib/presentation/widgets/shimmer_food_card.dart
 import 'package:flutter/material.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/shimmer_loading.dart';
 
 class ShimmerFoodCard extends StatelessWidget {
@@ -15,7 +15,7 @@ class ShimmerFoodCard extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+          borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusLarge),
         ),
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.1),
@@ -32,7 +32,7 @@ class ShimmerFoodCard extends StatelessWidget {
                   color: theme.brightness == Brightness.light
                       ? Colors.grey[300]
                       : Colors.grey[700],
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+                  borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
                 ),
               ),
               
@@ -52,7 +52,7 @@ class ShimmerFoodCard extends StatelessWidget {
                         color: theme.brightness == Brightness.light
                             ? Colors.grey[300]
                             : Colors.grey[700],
-                        borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+                        borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusSmall),
                       ),
                     ),
                     
@@ -65,7 +65,7 @@ class ShimmerFoodCard extends StatelessWidget {
                         color: theme.brightness == Brightness.light
                             ? Colors.grey[300]
                             : Colors.grey[700],
-                        borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+                        borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusSmall),
                       ),
                     ),
                     
@@ -80,7 +80,7 @@ class ShimmerFoodCard extends StatelessWidget {
                             color: theme.brightness == Brightness.light
                                 ? Colors.grey[300]
                                 : Colors.grey[700],
-                            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+                            borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusSmall),
                           ),
                         ),
                         
@@ -91,7 +91,7 @@ class ShimmerFoodCard extends StatelessWidget {
                             color: theme.brightness == Brightness.light
                                 ? Colors.grey[300]
                                 : Colors.grey[700],
-                            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+                            borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusSmall),
                           ),
                         ),
                       ],

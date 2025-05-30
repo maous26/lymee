@@ -1,5 +1,4 @@
 // Validation script for the nutrition app improvements
-import 'dart:convert';
 import 'dart:io';
 
 void main() async {

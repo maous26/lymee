@@ -1,4 +1,4 @@
-// lib/presentation/screens/food_search_screen.dart
+// lib/presentation/screens/food_search_screen.dart (modifié)
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lym_nutrition/domain/entities/food_item.dart';
@@ -6,9 +6,10 @@ import 'package:lym_nutrition/presentation/bloc/food_search/food_search_bloc.dar
 import 'package:lym_nutrition/presentation/bloc/food_search/food_search_event.dart';
 import 'package:lym_nutrition/presentation/bloc/food_search/food_search_state.dart';
 import 'package:lym_nutrition/presentation/screens/food_detail_screen.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/animated_list_item.dart';
 import 'package:lym_nutrition/presentation/widgets/animated_search_bar.dart';
+import 'package:lym_nutrition/presentation/widgets/brand_filter_bar.dart';
 import 'package:lym_nutrition/presentation/widgets/empty_results.dart';
 import 'package:lym_nutrition/presentation/widgets/food_card.dart';
 import 'package:lym_nutrition/presentation/widgets/shimmer_food_card.dart';
@@ -23,8 +24,13 @@ class FoodSearchScreen extends StatefulWidget {
 
 class _FoodSearchScreenState extends State<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _brandController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final FocusNode _brandFocusNode = FocusNode();
   bool _searchBarVisible = true;
+  bool _brandFilterVisible = false;
+  String _currentQuery = '';
+  String _currentBrand = '';
 
   @override
   void initState() {
@@ -40,21 +46,57 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _brandController.dispose();
+    _brandFocusNode.dispose();
     super.dispose();
   }
 
   void _performSearch(String query) {
-    if (query.isEmpty) {
+    setState(() {
+      _currentQuery = query;
+    });
+    
+    if (query.isEmpty && _currentBrand.isEmpty) {
       context.read<FoodSearchBloc>().add(GetFoodHistoryEvent());
       return;
     }
 
-    // Use unified search - no more tabs
-    context.read<FoodSearchBloc>().add(SearchAllFoodsEvent(query: query));
+    // Use unified search with brand filter
+    context.read<FoodSearchBloc>().add(
+      SearchAllFoodsEvent(
+        query: query,
+        brand: _currentBrand.isEmpty ? null : _currentBrand,
+      ),
+    );
+  }
+
+  void _applyBrandFilter(String brand) {
+    setState(() {
+      _currentBrand = brand;
+    });
+    
+    // Perform search with the current query and the new brand filter
+    context.read<FoodSearchBloc>().add(
+      SearchAllFoodsEvent(
+        query: _currentQuery,
+        brand: brand.isEmpty ? null : brand,
+      ),
+    );
   }
 
   void _clearSearch() {
+    setState(() {
+      _currentQuery = '';
+      _currentBrand = '';
+      _brandController.clear();
+    });
     context.read<FoodSearchBloc>().add(GetFoodHistoryEvent());
+  }
+
+  void _toggleBrandFilter() {
+    setState(() {
+      _brandFilterVisible = !_brandFilterVisible;
+    });
   }
 
   void _navigateToFoodDetail(FoodItem food) {
@@ -82,8 +124,17 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
               floating: true,
               pinned: true,
               snap: true,
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: PremiumTheme.primaryColor,
               actions: [
+                // Brand filter toggle button
+                IconButton(
+                  icon: Icon(
+                    Icons.business,
+                    color: _brandFilterVisible ? Colors.white : Colors.white70,
+                  ),
+                  tooltip: 'Filtrer par marque',
+                  onPressed: _toggleBrandFilter,
+                ),
                 // Debug button to refresh CIQUAL cache
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -94,7 +145,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
               flexibleSpace: FlexibleSpaceBar(
                 title: AnimatedOpacity(
                   opacity: innerBoxIsScrolled ? 1.0 : 0.0,
-                  duration: AppTheme.animationFast,
+                  duration: PremiumTheme.animationFast,
                   child: const Text(
                     'Rechercher un aliment',
                     style: TextStyle(
@@ -109,8 +160,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppTheme.primaryDarkColor,
-                        AppTheme.primaryColor,
+                        PremiumTheme.primaryDarkColor,
+                        PremiumTheme.primaryColor,
                       ],
                     ),
                   ),
@@ -150,9 +201,9 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
         },
         body: Column(
           children: [
-            // Barre de recherche
+            // Barre de recherche principale
             AnimatedContainer(
-              duration: AppTheme.animationMedium,
+              duration: PremiumTheme.animationMedium,
               height: _searchBarVisible ? 70 : 0,
               padding: const EdgeInsets.only(
                 left: 16,
@@ -166,9 +217,41 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                 hintText: 'Rechercher un aliment...',
                 onSearch: () => _performSearch(_searchController.text),
                 onClear: _clearSearch,
-                borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+                borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusLarge),
               ),
             ),
+
+            // Filtre par marque
+            BrandFilterBar(
+              controller: _brandController,
+              focusNode: _brandFocusNode,
+              onBrandFilter: _applyBrandFilter,
+              onClear: () {
+                _brandController.clear();
+                _applyBrandFilter('');
+              },
+              isVisible: _brandFilterVisible,
+            ),
+
+            // Chips de filtres actifs
+            if (_currentBrand.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Chip(
+                      label: Text('Marque: $_currentBrand'),
+                      deleteIcon: const Icon(Icons.close, size: 18),
+                      onDeleted: () {
+                        _brandController.clear();
+                        _applyBrandFilter('');
+                      },
+                      backgroundColor: PremiumTheme.secondaryColor.withOpacity(0.1),
+                      side: BorderSide(color: PremiumTheme.secondaryColor.withOpacity(0.3)),
+                    ),
+                  ],
+                ),
+              ),
 
             // Contenu principal
             Expanded(
@@ -187,7 +270,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                         submessage:
                             'Essayez avec d\'autres termes de recherche',
                         icon: Icons.search_off,
-                        color: AppTheme.primaryColor,
+                        color: PremiumTheme.primaryColor,
                       );
                     }
 
@@ -211,7 +294,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                         message: 'Aucun historique',
                         submessage: 'Les aliments consultés apparaîtront ici',
                         icon: Icons.history,
-                        color: AppTheme.primaryColor,
+                        color: PremiumTheme.primaryColor,
                       );
                     }
 
@@ -252,7 +335,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                       message: 'Une erreur est survenue',
                       submessage: state.message,
                       icon: Icons.error_outline,
-                      color: AppTheme.error,
+                      color: PremiumTheme.error,
                       actionLabel: 'Réessayer',
                       onActionPressed: () =>
                           _performSearch(_searchController.text),
@@ -265,7 +348,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                     submessage:
                         'Saisissez un nom d\'aliment dans la barre de recherche',
                     icon: Icons.search,
-                    color: AppTheme.primaryColor,
+                    color: PremiumTheme.primaryColor,
                   );
                 },
               ),

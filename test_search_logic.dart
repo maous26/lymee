@@ -1,8 +1,6 @@
 #!/usr/bin/env dart
 // Simple test for unified search
 
-import 'dart:io';
-
 void main() async {
   print('🧪 Testing Search Logic\n');
 

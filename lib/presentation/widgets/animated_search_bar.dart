@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 
 class AnimatedSearchBar extends StatefulWidget {
   final TextEditingController controller;
@@ -38,7 +38,7 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: AppTheme.animationMedium,
+      duration: PremiumTheme.animationMedium,
     );
     _scaleAnimation = CurvedAnimation(
       parent: _animationController,
@@ -77,10 +77,9 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar>
       child: Container(
         decoration: BoxDecoration(
           color: widget.backgroundColor ?? theme.cardTheme.color,
-          borderRadius:
-              widget.borderRadius ??
-              BorderRadius.circular(AppTheme.borderRadiusLarge),
-          boxShadow: AppTheme.shadowSmall,
+          borderRadius: widget.borderRadius ??
+              BorderRadius.circular(PremiumTheme.borderRadiusLarge),
+          boxShadow: PremiumTheme.shadowSmall,
         ),
         child: TextField(
           controller: widget.controller,
@@ -90,20 +89,20 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar>
           onSubmitted: (_) => widget.onSearch(),
           decoration: InputDecoration(
             hintText: widget.hintText,
-            prefixIcon: const Icon(Icons.search, color: AppTheme.primaryColor),
-            suffixIcon:
-                _showClearButton
-                    ? IconButton(
-                      icon: const Icon(
-                        Icons.clear,
-                        color: AppTheme.primaryColor,
-                      ),
-                      onPressed: () {
-                        widget.controller.clear();
-                        widget.onClear();
-                      },
-                    )
-                    : null,
+            prefixIcon:
+                const Icon(Icons.search, color: PremiumTheme.primaryColor),
+            suffixIcon: _showClearButton
+                ? IconButton(
+                    icon: const Icon(
+                      Icons.clear,
+                      color: PremiumTheme.primaryColor,
+                    ),
+                    onPressed: () {
+                      widget.controller.clear();
+                      widget.onClear();
+                    },
+                  )
+                : null,
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,

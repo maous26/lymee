@@ -79,8 +79,6 @@ and validated. Your Flutter nutrition app now has a streamlined, intelligent
 search experience that meets all specified requirements.
 */
 
-import 'package:flutter/material.dart';
-
 void main() {
   print('🎯 Unified Search Implementation: COMPLETE ✅');
   print('📅 Implementation Date: ${DateTime.now()}');

@@ -1,8 +1,8 @@
-// lib/presentation/widgets/food_card.dart
+// lib/presentation/widgets/food_card.dart (modifié)
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lym_nutrition/domain/entities/food_item.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/nutrition_score_badge.dart';
 
 class FoodCard extends StatelessWidget {
@@ -32,13 +32,13 @@ class FoodCard extends StatelessWidget {
     
     // Couleur de badge source pour différencier les aliments
     final Color sourceColor = food.source == 'ciqual'
-        ? AppTheme.primaryColor
-        : AppTheme.secondaryColor;
+        ? PremiumTheme.primaryColor
+        : PremiumTheme.secondaryColor;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+        borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusLarge),
       ),
       elevation: 2,
       shadowColor: Colors.black.withOpacity(0.1),
@@ -108,40 +108,15 @@ class FoodCard extends StatelessWidget {
                         ),
                       ),
                     
-                    // Badge indiquant la source
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Badge source
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: sourceColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
-                            border: Border.all(
-                              color: sourceColor.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            food.source == 'ciqual' ? 'Frais' : 'Transformé',
-                            style: textTheme.labelSmall?.copyWith(
-                              color: sourceColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    // Affichage des calories (sans le badge source)
+                    if (showCalories)
+                      Text(
+                        '${food.calories.round()} kcal',
+                        style: textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: sourceColor,
                         ),
-                        
-                        // Calories
-                        if (showCalories)
-                          Text(
-                            '${food.calories.round()} kcal',
-                            style: textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                      ],
-                    ),
+                      ),
                   ],
                 ),
               ),
@@ -182,7 +157,7 @@ class FoodCard extends StatelessWidget {
         height: 60,
         decoration: BoxDecoration(
           color: sourceColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+          borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
           border: Border.all(
             color: sourceColor.withOpacity(0.3),
             width: 1,
@@ -198,7 +173,7 @@ class FoodCard extends StatelessWidget {
     
     // Sinon, afficher l'image mise en cache
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+      borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
       child: CachedNetworkImage(
         imageUrl: food.imageUrl,
         width: 60,

@@ -1,5 +1,4 @@
 // Test file to verify BLoC types are working
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lym_nutrition/injection_container.dart' as di;
 import 'package:lym_nutrition/presentation/bloc/food_search/food_search_bloc.dart';

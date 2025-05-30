@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 
 class NutritionScoreBadge extends StatelessWidget {
   final double score;
@@ -18,8 +18,8 @@ class NutritionScoreBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = AppTheme.getNutritionScoreColor(score);
-    final label = AppTheme.getNutritionScoreLabel(score);
+    final color = PremiumTheme.getNutritionScoreColor(score);
+    final label = PremiumTheme.getNutritionScoreLabel(score);
     final scoreText =
         score.toStringAsFixed(1); // Afficher avec 1 décimale pour l'échelle 1-5
 
@@ -39,7 +39,7 @@ class NutritionScoreBadge extends StatelessWidget {
                   )
                 : null,
             color: useGradient ? null : color,
-            boxShadow: AppTheme.shadowSmall,
+            boxShadow: PremiumTheme.shadowSmall,
           ),
           child: Center(
             child: Text(

@@ -1,7 +1,6 @@
 // Clear CIQUAL cache script
 // Run this with: dart run clear_ciqual_cache.dart
 
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

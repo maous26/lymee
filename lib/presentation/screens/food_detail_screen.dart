@@ -5,7 +5,7 @@ import 'package:lym_nutrition/domain/entities/food_item.dart';
 import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_bloc.dart';
 import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_event.dart';
 import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_state.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/nutrition_score_badge.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -211,7 +211,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
             });
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
+            backgroundColor: PremiumTheme.primaryColor,
             foregroundColor: Colors.white,
           ),
           child: const Text('Ajouter'),
@@ -320,11 +320,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Détails de l\'aliment'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: PremiumTheme.primaryColor,
       ),
       body: const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+          valueColor: AlwaysStoppedAnimation<Color>(PremiumTheme.primaryColor),
         ),
       ),
     );
@@ -334,7 +334,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Erreur'),
-        backgroundColor: AppTheme.error,
+        backgroundColor: PremiumTheme.error,
       ),
       body: Center(
         child: Padding(
@@ -342,7 +342,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 80, color: AppTheme.error),
+              const Icon(Icons.error_outline,
+                  size: 80, color: PremiumTheme.error),
               const SizedBox(height: 24),
               Text(
                 'Une erreur est survenue',
@@ -368,7 +369,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                       );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: PremiumTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -388,8 +389,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final sourceColor = food.source == 'ciqual'
-        ? AppTheme.primaryColor
-        : AppTheme.secondaryColor;
+        ? PremiumTheme.primaryColor
+        : PremiumTheme.secondaryColor;
 
     return Scaffold(
       body: NestedScrollView(
@@ -404,7 +405,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
               flexibleSpace: FlexibleSpaceBar(
                 title: AnimatedOpacity(
                   opacity: _showTitle ? 1.0 : 0.0,
-                  duration: AppTheme.animationFast,
+                  duration: PremiumTheme.animationFast,
                   child: Text(
                     food.name,
                     style: const TextStyle(
@@ -469,10 +470,10 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                   content: Text(
                     '${food.name} ajouté à $meal (${quantity.toStringAsFixed(0)} $unit)',
                   ),
-                  backgroundColor: AppTheme.success,
+                  backgroundColor: PremiumTheme.success,
                   duration: const Duration(seconds: 3),
                   action: SnackBarAction(
-                    label: 'OK',
+                    label: 'D\'accord',
                     textColor: Colors.white,
                     onPressed: () {},
                   ),
@@ -642,7 +643,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+              borderRadius:
+                  BorderRadius.circular(PremiumTheme.borderRadiusLarge),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -653,7 +655,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: AppTheme.primaryColor,
+                        color: PremiumTheme.primaryColor,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -694,7 +696,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+              borderRadius:
+                  BorderRadius.circular(PremiumTheme.borderRadiusLarge),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -703,7 +706,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.stars, color: AppTheme.primaryColor, size: 20),
+                      Icon(Icons.stars,
+                          color: PremiumTheme.primaryColor, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Score nutritionnel',
@@ -727,12 +731,12 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppTheme.getNutritionScoreLabel(
+                              PremiumTheme.getNutritionScoreLabel(
                                 food.nutritionScore,
                               ),
                               style: textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.getNutritionScoreColor(
+                                color: PremiumTheme.getNutritionScoreColor(
                                   food.nutritionScore,
                                 ),
                               ),
@@ -762,7 +766,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+              borderRadius:
+                  BorderRadius.circular(PremiumTheme.borderRadiusLarge),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -773,7 +778,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                     children: [
                       Icon(
                         Icons.pie_chart,
-                        color: AppTheme.primaryColor,
+                        color: PremiumTheme.primaryColor,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -793,7 +798,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                         'Calories',
                         '${food.calories.round()}',
                         'kcal',
-                        AppTheme.accentColor,
+                        PremiumTheme.accentColor,
                         theme,
                       ),
                       _buildNutrientCircle(
@@ -931,7 +936,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           width: double.infinity,
           height: 14,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+            borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusSmall),
             color: mainColor.withOpacity(0.1),
           ),
           child: Stack(
@@ -942,7 +947,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius:
-                        BorderRadius.circular(AppTheme.borderRadiusSmall),
+                        BorderRadius.circular(PremiumTheme.borderRadiusSmall),
                     color: mainColor.withOpacity(0.7),
                   ),
                 ),
@@ -980,7 +985,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           width: double.infinity,
           height: 8,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+            borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusSmall),
             color: subColor.withOpacity(0.1),
           ),
           child: Stack(
@@ -991,7 +996,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius:
-                        BorderRadius.circular(AppTheme.borderRadiusSmall),
+                        BorderRadius.circular(PremiumTheme.borderRadiusSmall),
                     color: subColor.withOpacity(0.7),
                   ),
                 ),
@@ -1213,7 +1218,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
-                    AppTheme.borderRadiusLarge,
+                    PremiumTheme.borderRadiusLarge,
                   ),
                 ),
                 child: Padding(
@@ -1225,7 +1230,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                         children: [
                           Icon(
                             category['icon'] as IconData,
-                            color: AppTheme.primaryColor,
+                            color: PremiumTheme.primaryColor,
                             size: 20,
                           ),
                           const SizedBox(width: 8),

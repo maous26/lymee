@@ -3,14 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Couleurs principales
-  static const Color primaryColor = Color(
-    0xFF26A69A,
-  ); // Vert teal - couleur principale
-  static const Color primaryDarkColor = Color(0xFF00766C); // Vert teal foncé
-  static const Color primaryLightColor = Color(0xFF64D8CB); // Vert teal clair
-  static const Color accentColor = Color(0xFFFF7043); // Orange-rouge - accent
-  static const Color secondaryColor = Color(0xFF5C6BC0); // Indigo - secondaire
+  // Couleurs principales - Nouvelle palette avec orange en couleur principale
+  static const Color primaryColor = Color(0xFFFF6D00); // Orange vibrant - nouvelle couleur principale
+  static const Color primaryDarkColor = Color(0xFFE65100); // Orange foncé
+  static const Color primaryLightColor = Color(0xFFFF8F00); // Orange clair
+  
+  // Couleurs secondaires - Vert comme couleur secondaire
+  static const Color secondaryColor = Color(0xFF26A69A); // Vert teal - ancienne couleur principale
+  static const Color secondaryDarkColor = Color(0xFF00766C); // Vert teal foncé
+  static const Color secondaryLightColor = Color(0xFF64D8CB); // Vert teal clair
+  
+  // Couleurs technologiques - Ajout du violet pour l'aspect tech
+  static const Color techColor = Color(0xFF7E57C2); // Violet tech principal
+  static const Color techDarkColor = Color(0xFF5E35B1); // Violet tech foncé
+  static const Color techLightColor = Color(0xFF9575CD); // Violet tech clair
+  
+  // Couleur d'accent
+  static const Color accentColor = Color(0xFF5C6BC0); // Indigo - accent
 
   // Couleurs neutres
   static const Color backgroundLight = Color(0xFFF5F7FA); // Fond clair
