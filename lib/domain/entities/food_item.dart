@@ -15,6 +15,7 @@ class FoodItem {
   final String source; // 'ciqual' ou 'openfoodfacts'
   final String? brand;
   final double nutritionScore;
+  final String? nutriScoreGrade; // Grade Nutri-Score A, B, C, D, E
 
   FoodItem({
     required this.id,
@@ -32,5 +33,6 @@ class FoodItem {
     required this.source,
     this.brand,
     required this.nutritionScore,
+    this.nutriScoreGrade,
   });
 }

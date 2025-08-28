@@ -4,6 +4,7 @@ import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 // Modern, health-focused, and memorable Nutrition Score Badge
 class NutritionScoreBadge extends StatefulWidget {
   final double score;
+  final String? nutriScoreGrade; // Grade A, B, C, D, E
   final double size;
   final bool showLabel;
   final bool useGradient;
@@ -11,6 +12,7 @@ class NutritionScoreBadge extends StatefulWidget {
   const NutritionScoreBadge({
     Key? key,
     required this.score,
+    this.nutriScoreGrade,
     this.size = 56, // Larger by default for impact
     this.showLabel = false,
     this.useGradient = true,
@@ -47,13 +49,19 @@ class _NutritionScoreBadgeState extends State<NutritionScoreBadge>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = FreshTheme.getNutritionScoreColor(widget.score);
-    final label = FreshTheme.getNutritionScoreLabel(widget.score);
-    final scoreText = widget.score.toStringAsFixed(1);
+    
+    // Utiliser le grade Nutri-Score si disponible, sinon le score numérique
+    final displayText = widget.nutriScoreGrade ?? widget.score.toStringAsFixed(1);
+    final color = widget.nutriScoreGrade != null 
+        ? _getNutriScoreColor(widget.nutriScoreGrade!)
+        : FreshTheme.getNutritionScoreColor(widget.score);
+    final label = widget.nutriScoreGrade != null 
+        ? _getNutriScoreLabel(widget.nutriScoreGrade!)
+        : FreshTheme.getNutritionScoreLabel(widget.score);
     const badgeIcon = Icons.eco_rounded; // Health/eco icon
 
     return Semantics(
-      label: 'Score nutritionnel: $scoreText, $label',
+      label: 'Score nutritionnel: $displayText, $label',
       child: GestureDetector(
         onTapDown: (_) => setState(() => _pressed = true),
         onTapUp: (_) => setState(() => _pressed = false),
@@ -135,7 +143,7 @@ class _NutritionScoreBadgeState extends State<NutritionScoreBadge>
                             ),
                             // Score text
                             Text(
-                              scoreText,
+                              displayText,
                               style: theme.textTheme.displayMedium?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w900,
@@ -181,5 +189,41 @@ class _NutritionScoreBadgeState extends State<NutritionScoreBadge>
         ),
       ),
     );
+  }
+
+  /// Couleurs officielles du Nutri-Score
+  Color _getNutriScoreColor(String grade) {
+    switch (grade.toUpperCase()) {
+      case 'A':
+        return const Color(0xFF038141); // Vert foncé
+      case 'B':
+        return const Color(0xFF85BB2F); // Vert clair
+      case 'C':
+        return const Color(0xFFFECB00); // Jaune
+      case 'D':
+        return const Color(0xFFEE8100); // Orange
+      case 'E':
+        return const Color(0xFFE63E11); // Rouge
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Labels du Nutri-Score
+  String _getNutriScoreLabel(String grade) {
+    switch (grade.toUpperCase()) {
+      case 'A':
+        return 'Excellente qualité nutritionnelle';
+      case 'B':
+        return 'Bonne qualité nutritionnelle';
+      case 'C':
+        return 'Qualité nutritionnelle moyenne';
+      case 'D':
+        return 'Qualité nutritionnelle médiocre';
+      case 'E':
+        return 'Mauvaise qualité nutritionnelle';
+      default:
+        return 'Non évalué';
+    }
   }
 }

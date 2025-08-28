@@ -131,6 +131,7 @@ class FoodCard extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 8),
                   child: NutritionScoreBadge(
                     score: food.nutritionScore,
+                    nutriScoreGrade: food.nutriScoreGrade,
                     size: 35,
                     showLabel: false,
                   ),

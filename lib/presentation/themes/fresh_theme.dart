@@ -1,6 +1,5 @@
 // lib/presentation/themes/fresh_theme.dart
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 
 class FreshTheme {
@@ -41,36 +40,36 @@ class FreshTheme {
   static ThemeData light() {
     final ThemeData base = ThemeData.light(useMaterial3: true);
 
-    final TextTheme textTheme = TextTheme(
-      displayLarge: GoogleFonts.poppins(
+    final TextTheme textTheme = const TextTheme(
+      displayLarge: TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.5,
         color: midnightGray,
       ),
-      headlineMedium: GoogleFonts.inter(
+      headlineMedium: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.15,
         color: midnightGray,
       ),
-      titleMedium: GoogleFonts.inter(
+      titleMedium: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: midnightGray,
       ),
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         height: 1.5,
         color: midnightGray,
       ),
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: midnightGray,
       ),
-      labelLarge: GoogleFonts.inter(
+      labelLarge: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         letterSpacing: 0.5,
@@ -94,7 +93,7 @@ class FreshTheme {
         backgroundColor: Colors.transparent,
         foregroundColor: midnightGray,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: midnightGray,
@@ -130,13 +129,13 @@ class FreshTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: primaryMint, width: 1.5),
         ),
-        hintStyle: GoogleFonts.inter(color: stormGray),
+        hintStyle: const TextStyle(color: stormGray),
       ),
       chipTheme: base.chipTheme.copyWith(
         color: const WidgetStatePropertyAll(
           Color(0x1A00D4AA), // mint with low opacity
         ),
-        labelStyle: GoogleFonts.inter(
+        labelStyle: const TextStyle(
           color: primaryMint,
           fontWeight: FontWeight.w600,
         ),

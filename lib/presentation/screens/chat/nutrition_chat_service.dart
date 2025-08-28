@@ -34,7 +34,8 @@ class NutritionChatService {
   String? get _openaiKey => dotenv.env['OPENAI_API_KEY']?.trim();
   String get _pplxBaseUrl => (dotenv.env['PERPLEXITY_BASE_URL']?.trim() ??
       'https://api.perplexity.ai');
-  String get _pplxModel => (dotenv.env['PERPLEXITY_MODEL']?.trim() ?? 'gpt-4o-mini');
+  String get _pplxModel =>
+      (dotenv.env['PERPLEXITY_MODEL']?.trim() ?? 'gpt-4o-mini');
   String get _openaiBaseUrl => 'https://api.openai.com/v1';
   String get _openaiModel =>
       (dotenv.env['OPENAI_MODEL']?.trim() ?? 'gpt-4o-mini');
@@ -44,18 +45,26 @@ class NutritionChatService {
   bool get _usePerplexity => _pplxKey != null && _pplxKey!.isNotEmpty;
   String get _systemPrompt {
     final basePrompt = dotenv.env['COACH_SYSTEM_PROMPT']?.trim() ??
-        '''Tu es Lymee, assistant IA nutrition expert personnalisé. Tu dois:
-1. NE JAMAIS demander des informations déjà disponibles dans le profil utilisateur (objectifs, activité, allergies, etc.)
-2. Utiliser directement les données du profil pour personnaliser tes conseils
-3. Répondre uniquement aux questions liées à la nutrition, alimentation, hydratation, calories, macronutriments
-4. Pour les suggestions de repas, TOUJOURS inclure des recettes détaillées avec:
-   - Ingrédients précis avec quantités
-   - Instructions étape par étape (numérotées et brèves)
-   - Temps de préparation et cuisson
-   - Valeurs nutritionnelles (calories, protéines, glucides, lipides)
-5. Être bref et précis dans tes réponses
-6. Si on te demande des séances de sport, réponds: "Pour créer des séances personnalisées, rendez-vous dans l'onglet Journal et cliquez sur 'Générer une séance'."
-7. Si la question sort du périmètre nutrition, rediriger poliment vers un sujet nutritionnel pertinent''';
+        '''
+    **Your Identity:** You are Lymee, a personalized AI nutrition coach. Your persona is encouraging, scientific, and expert. Your goal is to provide safe, effective, and highly personalized nutritional advice.
+
+    **Core Directives:**
+    1.  **Never Ask for Existing Data:** The user's profile is provided below. All necessary data (goals, activity level, allergies, preferences, biometrics) is included. NEVER ask for this information again. Use it directly to tailor every response.
+    2.  **Strict Domain Adherence:** Only answer questions related to nutrition, food, hydration, calories, macronutrients, and healthy eating habits. If asked about workouts or topics outside this scope, politely decline and steer the conversation back to nutrition. For workout requests, say: "Pour créer des séances personnalisées, rendez-vous dans l'onglet Journal et cliquez sur 'Générer une séance'."
+    3.  **Safety and Scientific Rigor:** Base all advice on established nutritional science. Avoid fad diets or extreme recommendations. Prioritize user safety and well-being. If a user's request seems unhealthy (e.g., extremely low calories), gently correct them with a safer, more balanced alternative.
+    4.  **Recipe Protocol:** When providing meal or recipe suggestions, ALWAYS follow this detailed format:
+        - **Title:** Clear and appealing.
+        - **Total Time:** "Préparation: X min | Cuisson: Y min"
+        - **Ingredients:** Use a bulleted list with precise quantities (e.g., "- 150g de blanc de poulet").
+        - **Instructions:** Provide numbered, step-by-step directions. Keep them brief and clear.
+        - **Nutrition Estimate:** Provide a breakdown: "Calories: ~X kcal | Protéines: Yg | Glucides: Zg | Lipides: Wg".
+
+    **Response Style:**
+    -   **Tone:** Be positive, supportive, and clear. Avoid overly technical jargon.
+    -   **Formatting:** Use Markdown for clarity. Embolden key terms (**-15g de protéines**). Use bullet points for lists.
+    -   **Conciseness:** Get straight to the point. Deliver actionable advice without unnecessary conversational filler.
+    -   **Closing:** Always end your responses with a question to encourage conversation, such as "Souhaitez-vous plus de détails ?" or "Est-ce que cela vous convient ?".
+    ''';
 
     // Style concis par défaut pour éviter les réponses trop longues
     final brevity =
@@ -543,7 +552,10 @@ Sois très précis et totalement personnalisé.''';
     final isWorkoutGeneration = last.contains('génère une séance') ||
         last.contains('coach sportif expert');
 
-    if (!isWorkoutGeneration && !_isNutritionDomain(last)) {
+    final bool inDomain = _isNutritionDomain(last) ||
+        _isFollowUp(last) ||
+        _hasNutritionContext(messages);
+    if (!isWorkoutGeneration && !inDomain) {
       return "Je réponds aux sujets nutrition et sport: repas, recettes, calories, macros, hydratation et séances d'entraînement. Reformule ta question dans ce domaine.";
     }
 
@@ -659,9 +671,17 @@ Sois très précis et totalement personnalisé.''';
       'glucide',
       'lipide',
       'graisse',
+      'sucre',
+      'sucré',
+      'dessert',
+      'goûter',
+      'gouter',
+      'collation',
+      'manger',
+      'boire',
+      'soir',
       'hydratation',
       'eau',
-      'collation',
       'snack',
       'déjeuner',
       'dîner',
@@ -722,6 +742,46 @@ Sois très précis et totalement personnalisé.''';
     return intents.any((w) => msg.contains(w));
   }
 
+  // Consider short confirmations or follow-ups as valid continuation
+  bool _isFollowUp(String msg) {
+    if (msg.isEmpty) return false;
+    final m = msg.trim();
+    if (m.length <= 3) {
+      // e.g., "oui", "ok", "non"
+      return ['oui', 'ok', 'non', 'yes', 'no'].contains(m);
+    }
+    final followUps = [
+      'continue',
+      'plus',
+      'davantage',
+      'détails',
+      'details',
+      'développe',
+      'developpe',
+      'exemple',
+      'exemples',
+      'en savoir',
+      'dis m\'en',
+      'svp',
+    ];
+    return followUps.any((w) => m.contains(w));
+  }
+
+  // If the latest message isn't explicitly in-domain, allow if recent user
+  // messages (context) were in-domain – supports follow-up like "oui".
+  bool _hasNutritionContext(List<Map<String, String>> messages) {
+    int checked = 0;
+    for (var i = messages.length - 2; i >= 0 && checked < 3; i--) {
+      final role = messages[i]['role'] ?? '';
+      if (role == 'user') {
+        checked++;
+        final txt = (messages[i]['content'] ?? '').toLowerCase();
+        if (_isNutritionDomain(txt) || _isSportIntent(txt)) return true;
+      }
+    }
+    return false;
+  }
+
   String _buildWorkoutPrompt(UserProfile? profile, String userQuery) {
     final p = profile;
     final goal = p != null ? _getWeightGoalText(p.weightGoal) : 'santé';
@@ -745,11 +805,14 @@ Sois très précis et totalement personnalisé.''';
   }
 
   // Public helper to persist a workout content manually from UI
-  Future<void> saveWorkoutContent(String content, {DateTime? day, String? type, int? duration}) async {
-    await _saveWorkoutSessionText(content, day: day, type: type, duration: duration);
+  Future<void> saveWorkoutContent(String content,
+      {DateTime? day, String? type, int? duration}) async {
+    await _saveWorkoutSessionText(content,
+        day: day, type: type, duration: duration);
   }
 
-  Future<void> _saveWorkoutSessionText(String content, {DateTime? day, String? type, int? duration}) async {
+  Future<void> _saveWorkoutSessionText(String content,
+      {DateTime? day, String? type, int? duration}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final dateKey =
@@ -774,42 +837,48 @@ Sois très précis et totalement personnalisé.''';
       }
       // Persist to backend (best effort) and keep summary locally
       final summary = _extractWorkoutSummary(content);
-      
+
       // Override extracted values with provided parameters if available
       if (type != null) summary['type'] = type;
       if (duration != null) summary['duration'] = duration;
-      
+
       final persisted = await _persistWorkoutToBackend(content, day: day);
       final List<dynamic> sports = (journal['sports'] as List?) ?? [];
-      
+
       // Check for duplicates before adding, but allow AI-generated content to replace manual entries
       final existingEntry = sports.firstWhere(
-        (entry) => entry['type'] == summary['type'] && 
-                   entry['duration'] == summary['duration'] && // Must be EXACT same duration
-                   entry['createdAt'] != null &&
-                   _isRecentEntry(entry['createdAt'], minutes: 5),
+        (entry) =>
+            entry['type'] == summary['type'] &&
+            entry['duration'] ==
+                summary['duration'] && // Must be EXACT same duration
+            entry['createdAt'] != null &&
+            _isRecentEntry(entry['createdAt'], minutes: 5),
         orElse: () => null,
       );
-      
+
       if (existingEntry != null) {
         // Allow replacement if new content is much longer (AI-generated replacing manual)
         final existingText = existingEntry['text']?.toString() ?? '';
-        final isReplacingManualWithAI = existingText.length < 100 && content.length > 500;
-        
+        final isReplacingManualWithAI =
+            existingText.length < 100 && content.length > 500;
+
         if (isReplacingManualWithAI) {
-          print('🔄 Replacing manual workout with AI-generated content: ${summary['type']} - ${summary['duration']}min');
+          print(
+              '🔄 Replacing manual workout with AI-generated content: ${summary['type']} - ${summary['duration']}min');
           // Remove the old entry
-          sports.removeWhere((entry) => 
-            entry['type'] == summary['type'] && 
-            entry['duration'] == summary['duration'] && // Must be EXACT same duration
-            entry['createdAt'] != null &&
-            _isRecentEntry(entry['createdAt'], minutes: 5));
+          sports.removeWhere((entry) =>
+              entry['type'] == summary['type'] &&
+              entry['duration'] ==
+                  summary['duration'] && // Must be EXACT same duration
+              entry['createdAt'] != null &&
+              _isRecentEntry(entry['createdAt'], minutes: 5));
         } else {
-          print('⚠️ Skipped duplicate workout: ${summary['type']} - ${summary['duration']}min (created recently)');
+          print(
+              '⚠️ Skipped duplicate workout: ${summary['type']} - ${summary['duration']}min (created recently)');
           return; // Don't save duplicate
         }
       }
-      
+
       final entry = {
         'id': persisted['id'],
         'type': summary['type'],
@@ -837,7 +906,7 @@ Sois très précis et totalement personnalisé.''';
 
   Map<String, dynamic> _extractWorkoutSummary(String content) {
     String header = '';
-    
+
     // Look for header in first few lines (either with ** or ###)
     final lines = content.split('\n');
     for (int i = 0; i < lines.length && i < 5; i++) {
@@ -853,7 +922,7 @@ Sois très précis et totalement personnalisé.''';
 
     String type = 'Séance';
     int duration = 30; // default duration
-    
+
     // If we have a header, extract type and duration from it
     if (header.isNotEmpty) {
       if (header.contains('–')) {
@@ -893,7 +962,7 @@ Sois très précis et totalement personnalisé.''';
       'natation': 'Natation',
       'cardio': 'Cardio',
     };
-    
+
     // If type is still generic, try to detect from content
     if (type == 'Séance') {
       for (final k in typeMap.keys) {

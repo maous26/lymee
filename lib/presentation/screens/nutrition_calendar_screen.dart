@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
-import 'package:lym_nutrition/presentation/screens/nutrition_dashboard_screen_improved_v2.dart';
-import 'package:lym_nutrition/domain/entities/user_profile.dart';
+import 'package:lym_nutrition/presentation/screens/nutrition_dashboard_screen_improved_v2.dart'
+    as nd2;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -49,21 +49,22 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
         date: date,
         totalCalories: 1500 + (i * 50 % 800),
         meals: [
-          if (i % 3 != 0) MealFood('Petit-déjeuner complet', 450, 15, 60, 15),
-          if (i % 2 == 0) MealFood('Déjeuner équilibré', 650, 30, 70, 20),
-          MealFood('Dîner léger', 400, 25, 40, 12),
+          if (i % 3 != 0)
+            nd2.MealFood('Petit-déjeuner complet', 450, 15, 60, 15),
+          if (i % 2 == 0) nd2.MealFood('Déjeuner équilibré', 650, 30, 70, 20),
+          nd2.MealFood('Dîner léger', 400, 25, 40, 12),
         ],
         sportSessions: i % 3 == 0
             ? []
             : [
-                SportSession(
+                nd2.SportSession(
                   sportName: [
                     'Course à pied',
                     'Natation',
                     'Musculation'
                   ][i % 3],
                   duration: 30 + (i * 5 % 60),
-                  intensity: SportIntensity.values[i % 4],
+                  intensity: nd2.SportIntensity.values[i % 4],
                 ),
               ],
         waterConsumed: 1500 + (i * 100 % 1500),
@@ -84,8 +85,9 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
       final dateKey = DateTime(savedDate.year, savedDate.month, savedDate.day);
 
       final List<dynamic> mealsData = jsonDecode(dailyMealsJson);
-      final meals = mealsData
-          .map((json) => MealFood.fromAIMeal(json as Map<String, dynamic>))
+      final List<nd2.MealFood> meals = mealsData
+          .map<nd2.MealFood>(
+              (json) => nd2.MealFood.fromAIMeal(json as Map<String, dynamic>))
           .toList();
 
       final totalCalories = meals.fold(0.0, (sum, meal) => sum + meal.calories);
@@ -110,8 +112,9 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
       final dateKey = DateTime.parse('${savedDate}T00:00:00');
 
       final List<dynamic> mealsData = savedData['meals'];
-      final meals = mealsData
-          .map((json) => MealFood.fromAIMeal(json as Map<String, dynamic>))
+      final List<nd2.MealFood> meals = mealsData
+          .map<nd2.MealFood>(
+              (json) => nd2.MealFood.fromAIMeal(json as Map<String, dynamic>))
           .toList();
 
       final totalCalories = meals.fold(0.0, (sum, meal) => sum + meal.calories);
@@ -158,8 +161,9 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
           final dateKey =
               DateTime(targetDate.year, targetDate.month, targetDate.day);
 
-          final mealsList = (meals as List)
-              .map((json) => MealFood.fromAIMeal(json as Map<String, dynamic>))
+          final List<nd2.MealFood> mealsList = (meals as List)
+              .map<nd2.MealFood>((json) =>
+                  nd2.MealFood.fromAIMeal(json as Map<String, dynamic>))
               .toList();
 
           final totalCalories =
@@ -525,7 +529,7 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
     );
   }
 
-  Widget _buildMealItem(MealFood meal) {
+  Widget _buildMealItem(nd2.MealFood meal) {
     return Card(
       elevation: 1,
       shadowColor: Colors.black.withAlpha(20),
@@ -546,7 +550,7 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
     );
   }
 
-  Widget _buildSportItem(SportSession session) {
+  Widget _buildSportItem(nd2.SportSession session) {
     final calories = _calculateSessionCalories(session);
     return Card(
       elevation: 1,
@@ -666,45 +670,45 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
     return '${weekdays[date.weekday - 1]} ${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  double _calculateTotalSportCalories(List<SportSession> sessions) {
+  double _calculateTotalSportCalories(List<nd2.SportSession> sessions) {
     return sessions.fold(0.0, (total, session) {
       return total + _calculateSessionCalories(session);
     });
   }
 
-  double _calculateSessionCalories(SportSession session) {
+  double _calculateSessionCalories(nd2.SportSession session) {
     const baseCaloriesPerMinute = {
-      SportIntensity.low: 3.5,
-      SportIntensity.medium: 7.0,
-      SportIntensity.high: 11.0,
-      SportIntensity.extreme: 15.0,
+      nd2.SportIntensity.low: 3.5,
+      nd2.SportIntensity.medium: 7.0,
+      nd2.SportIntensity.high: 11.0,
+      nd2.SportIntensity.extreme: 15.0,
     };
 
     return (baseCaloriesPerMinute[session.intensity] ?? 7.0) * session.duration;
   }
 
-  Color _getIntensityColor(SportIntensity intensity) {
+  Color _getIntensityColor(nd2.SportIntensity intensity) {
     switch (intensity) {
-      case SportIntensity.low:
+      case nd2.SportIntensity.low:
         return Colors.green;
-      case SportIntensity.medium:
+      case nd2.SportIntensity.medium:
         return Colors.blue;
-      case SportIntensity.high:
+      case nd2.SportIntensity.high:
         return Colors.orange;
-      case SportIntensity.extreme:
+      case nd2.SportIntensity.extreme:
         return Colors.red;
     }
   }
 
-  String _getIntensityLabel(SportIntensity intensity) {
+  String _getIntensityLabel(nd2.SportIntensity intensity) {
     switch (intensity) {
-      case SportIntensity.low:
+      case nd2.SportIntensity.low:
         return 'Faible';
-      case SportIntensity.medium:
+      case nd2.SportIntensity.medium:
         return 'Modérée';
-      case SportIntensity.high:
+      case nd2.SportIntensity.high:
         return 'Élevée';
-      case SportIntensity.extreme:
+      case nd2.SportIntensity.extreme:
         return 'Extrême';
     }
   }
@@ -729,8 +733,8 @@ class _NutritionCalendarScreenState extends State<NutritionCalendarScreen> {
 class DayData {
   final DateTime date;
   final double totalCalories;
-  final List<MealFood> meals;
-  final List<SportSession> sportSessions;
+  final List<nd2.MealFood> meals;
+  final List<nd2.SportSession> sportSessions;
   final double waterConsumed;
   final bool isAIMealPlan;
 

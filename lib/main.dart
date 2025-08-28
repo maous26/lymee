@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:lym_nutrition/injection_container.dart' as di;
 import 'package:lym_nutrition/presentation/bloc/food_search/food_search_bloc.dart';
@@ -48,6 +49,9 @@ void main() async {
       statusBarIconBrightness: Brightness.light,
     ),
   );
+
+  // Empêcher le chargement des polices Google via le réseau (environnements restreints)
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   runApp(const MyApp());
 }

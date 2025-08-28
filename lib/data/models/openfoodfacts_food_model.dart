@@ -1,5 +1,6 @@
 // lib/data/models/openfoodfacts_food_model.dart
 import 'package:lym_nutrition/domain/entities/food_item.dart';
+import 'package:lym_nutrition/core/services/nutriscore_calculator.dart';
 
 class OpenFoodFactsFoodModel extends FoodItem {
   final String barcode;
@@ -40,6 +41,7 @@ class OpenFoodFactsFoodModel extends FoodItem {
           source: 'openfoodfacts',
           brand: brand,
           nutritionScore: nutritionScore,
+          nutriScoreGrade: nutriscore,
         );
 
   factory OpenFoodFactsFoodModel.fromJson(Map<String, dynamic> json) {
@@ -84,8 +86,8 @@ class OpenFoodFactsFoodModel extends FoodItem {
       allergens: product['allergens_tags'] != null
           ? List<String>.from(product['allergens_tags'])
           : null,
-      nutriscore: product['nutriscore_grade'],
-      nutritionScore: _calculateNutritionScore(product),
+      nutriscore: product['nutriscore_grade'] ?? _calculateOfficialNutriScore(product, nutrients),
+      nutritionScore: _convertNutriScoreToNumeric(product['nutriscore_grade'] ?? _calculateOfficialNutriScore(product, nutrients)),
     );
   }
 
@@ -121,51 +123,62 @@ class OpenFoodFactsFoodModel extends FoodItem {
     return (map[key] as num).toDouble();
   }
 
-  static double _calculateNutritionScore(Map<String, dynamic> product) {
-    // Utilisation du Nutri-Score si disponible - conversion vers échelle 1-5
-    String? nutriscoreGrade = product['nutriscore_grade'];
-    if (nutriscoreGrade != null) {
-      switch (nutriscoreGrade.toLowerCase()) {
-        case 'a':
-          return 5.0; // Excellent
-        case 'b':
-          return 4.0; // Bon
-        case 'c':
-          return 3.0; // Moyen
-        case 'd':
-          return 2.0; // Faible
-        case 'e':
-          return 1.0; // Mauvais
-      }
+  /// Calcule le Nutri-Score officiel selon l'algorithme OpenFoodFacts
+  static String? _calculateOfficialNutriScore(Map<String, dynamic> product, Map<String, dynamic> nutrients) {
+    try {
+      // Récupération des valeurs nutritionnelles
+      double calories = _getDoubleValue(nutrients, 'energy-kcal_100g') ?? 0;
+      double energy = NutriScoreCalculator.caloriesToKilojoules(calories);
+      double sugars = _getDoubleValue(nutrients, 'sugars_100g') ?? 0;
+      double saturatedFat = _getDoubleValue(nutrients, 'saturated-fat_100g') ?? 0;
+      double salt = _getDoubleValue(nutrients, 'salt_100g') ?? 0;
+      double sodium = NutriScoreCalculator.saltToSodium(salt);
+      double fiber = _getDoubleValue(nutrients, 'fiber_100g') ?? 0;
+      double proteins = _getDoubleValue(nutrients, 'proteins_100g') ?? 0;
+      
+      // Estimation du pourcentage fruits/légumes/noix
+      String category = product['categories_tags']?.isNotEmpty 
+          ? product['categories_tags'][0] ?? 'general'
+          : 'general';
+      List<String>? ingredients = product['ingredients_tags'] != null
+          ? List<String>.from(product['ingredients_tags'])
+          : null;
+      double fruitsVegetablesNuts = NutriScoreCalculator.estimateFruitsVegetablesNuts(category, ingredients);
+
+      // Calcul du Nutri-Score
+      return NutriScoreCalculator.calculateNutriScore(
+        energy: energy,
+        sugars: sugars,
+        saturatedFat: saturatedFat,
+        sodium: sodium,
+        fiber: fiber,
+        proteins: proteins,
+        fruitsVegetablesNuts: fruitsVegetablesNuts,
+        category: category,
+      );
+    } catch (e) {
+      print('Erreur lors du calcul du Nutri-Score: $e');
+      return null;
     }
+  }
 
-    // Calcul simplifié si pas de Nutri-Score - conversion vers échelle 1-5
-    Map<String, dynamic> nutrients = product['nutriments'] ?? {};
-
-    double score = 3.0; // Score de base (moyen)
-
-    // Bonus pour protéines
-    double proteins = _getDoubleValue(nutrients, 'proteins_100g') ?? 0;
-    score += proteins * 0.02; // Facteur réduit pour échelle 1-5
-
-    // Bonus pour fibres
-    double fibers = _getDoubleValue(nutrients, 'fiber_100g') ?? 0;
-    score += fibers * 0.03; // Facteur réduit pour échelle 1-5
-
-    // Malus pour sucres
-    double sugars = _getDoubleValue(nutrients, 'sugars_100g') ?? 0;
-    score -= sugars * 0.015; // Facteur réduit pour échelle 1-5
-
-    // Malus pour graisses saturées
-    double saturatedFats =
-        _getDoubleValue(nutrients, 'saturated-fat_100g') ?? 0;
-    score -= saturatedFats * 0.02; // Facteur réduit pour échelle 1-5
-
-    // Malus pour sel
-    double salt = _getDoubleValue(nutrients, 'salt_100g') ?? 0;
-    score -= salt * 0.5; // Facteur réduit pour échelle 1-5
-
-    // Limiter le score entre 1 et 5
-    return score.clamp(1.0, 5.0);
+  /// Convertit le grade Nutri-Score (A-E) en score numérique (1-5)
+  static double _convertNutriScoreToNumeric(String? nutriscoreGrade) {
+    if (nutriscoreGrade == null) return 3.0;
+    
+    switch (nutriscoreGrade.toUpperCase()) {
+      case 'A':
+        return 5.0; // Excellent
+      case 'B':
+        return 4.0; // Bon
+      case 'C':
+        return 3.0; // Moyen
+      case 'D':
+        return 2.0; // Faible
+      case 'E':
+        return 1.0; // Mauvais
+      default:
+        return 3.0; // Par défaut
+    }
   }
 }

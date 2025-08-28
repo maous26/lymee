@@ -1,5 +1,6 @@
 // lib/data/models/ciqual_food_model.dart
 import 'package:lym_nutrition/domain/entities/food_item.dart';
+import 'package:lym_nutrition/core/services/nutriscore_calculator.dart';
 
 class CiqualFoodModel extends FoodItem {
   final String alimCode;
@@ -13,6 +14,7 @@ class CiqualFoodModel extends FoodItem {
     this.alimSsgrpNomFr,
     required Map<String, dynamic> nutrients,
     required double nutritionScore,
+    String? nutriScoreGrade,
   }) : super(
           id: alimCode,
           name: name,
@@ -30,11 +32,13 @@ class CiqualFoodModel extends FoodItem {
           source: 'ciqual',
           brand: null,
           nutritionScore: nutritionScore,
+          nutriScoreGrade: nutriScoreGrade,
         );
 
   factory CiqualFoodModel.fromJson(Map<String, dynamic> json) {
-    // Calcul du score nutritionnel basé sur les recommandations OMS
-    double nutritionScore = _calculateNutritionScore(json);
+    // Calcul du Nutri-Score officiel selon l'algorithme OpenFoodFacts
+    String? nutriscoreGrade = _calculateOfficialNutriScore(json);
+    double nutritionScore = _convertNutriScoreToNumeric(nutriscoreGrade);
 
     return CiqualFoodModel(
       alimCode: json['alim_code'].toString(),
@@ -43,6 +47,7 @@ class CiqualFoodModel extends FoodItem {
       alimSsgrpNomFr: json['alim_ssgrp_nom_fr'],
       nutrients: _extractNutrients(json),
       nutritionScore: nutritionScore,
+      nutriScoreGrade: nutriscoreGrade,
     );
   }
 
@@ -97,49 +102,85 @@ class CiqualFoodModel extends FoodItem {
     return (nutrients[key] as num).toDouble();
   }
 
-  static double _calculateNutritionScore(Map<String, dynamic> json) {
-    // Implémentation simplifiée du score nutritionnel basé sur les recommandations OMS
-    // Score de 1 à 5, où 5 est excellent
-    double score = 3.0; // Score de base (moyen)
+  /// Calcule le Nutri-Score officiel selon l'algorithme OpenFoodFacts pour les données CIQUAL
+  static String? _calculateOfficialNutriScore(Map<String, dynamic> json) {
+    try {
+      // Récupération des valeurs nutritionnelles depuis les données CIQUAL
+      double energyKj = _getDoubleValue(json, 'Energie, N x facteur Jones, avec fibres (kJ/100 g)');
+      double energy = energyKj; // Déjà en kJ
+      double sugars = _getDoubleValue(json, 'Sucres (g/100 g)');
+      double saturatedFat = _getDoubleValue(json, 'AG saturés (g/100 g)');
+      double salt = _getDoubleValue(json, 'Sel chlorure de sodium (g/100 g)');
+      double sodium = NutriScoreCalculator.saltToSodium(salt);
+      double fiber = _getDoubleValue(json, 'Fibres alimentaires (g/100 g)');
+      double proteins = _getDoubleValue(json, 'Protéines, N x facteur de Jones (g/100 g)');
+      
+      // Estimation du pourcentage fruits/légumes/noix basée sur la catégorie CIQUAL
+      String category = json['alim_grp_nom_fr'] ?? 'general';
+      double fruitsVegetablesNuts = _estimateFruitsVegetablesNutsCiqual(category);
 
-    // Bonus pour protéines
-    double proteins =
-        _getDoubleValue(json, 'Protéines, N x facteur de Jones (g/100 g)');
-    score += proteins * 0.02; // Facteur réduit pour échelle 1-5
-
-    // Bonus pour fibres
-    double fibers = _getDoubleValue(json, 'Fibres alimentaires (g/100 g)');
-    score += fibers * 0.03; // Facteur réduit pour échelle 1-5
-
-    // Malus pour sucres
-    double sugars = _getDoubleValue(json, 'Sucres (g/100 g)');
-    score -= sugars * 0.015; // Facteur réduit pour échelle 1-5
-
-    // Malus pour graisses saturées
-    double saturatedFats = _getDoubleValue(json, 'AG saturés (g/100 g)');
-    score -= saturatedFats * 0.02; // Facteur réduit pour échelle 1-5
-
-    // Malus pour sel
-    double salt = _getDoubleValue(json, 'Sel chlorure de sodium (g/100 g)');
-    score -= salt * 0.5; // Facteur réduit pour échelle 1-5
-
-    // Bonus pour vitamines et minéraux
-    // Simplification: on compte juste les présences de vitamines/minéraux
-    int nutrientCount = 0;
-    for (String key in json.keys) {
-      if (key.startsWith('Vitamine') ||
-          key == 'Calcium (mg/100 g)' ||
-          key == 'Fer (mg/100 g)' ||
-          key == 'Magnésium (mg/100 g)') {
-        var value = json[key];
-        if (value != null && value != '-' && value != '0' && value != '0.0') {
-          nutrientCount++;
-        }
-      }
+      // Calcul du Nutri-Score
+      return NutriScoreCalculator.calculateNutriScore(
+        energy: energy,
+        sugars: sugars,
+        saturatedFat: saturatedFat,
+        sodium: sodium,
+        fiber: fiber,
+        proteins: proteins,
+        fruitsVegetablesNuts: fruitsVegetablesNuts,
+        category: category,
+      );
+    } catch (e) {
+      print('Erreur lors du calcul du Nutri-Score CIQUAL: $e');
+      return null;
     }
-    score += nutrientCount * 0.05; // Facteur réduit pour échelle 1-5
+  }
 
-    // Limiter le score entre 1 et 5
-    return score.clamp(1.0, 5.0);
+  /// Convertit le grade Nutri-Score (A-E) en score numérique (1-5)
+  static double _convertNutriScoreToNumeric(String? nutriscoreGrade) {
+    if (nutriscoreGrade == null) return 3.0;
+    
+    switch (nutriscoreGrade.toUpperCase()) {
+      case 'A':
+        return 5.0; // Excellent
+      case 'B':
+        return 4.0; // Bon
+      case 'C':
+        return 3.0; // Moyen
+      case 'D':
+        return 2.0; // Faible
+      case 'E':
+        return 1.0; // Mauvais
+      default:
+        return 3.0; // Par défaut
+    }
+  }
+
+  /// Estimation du pourcentage de fruits/légumes/noix pour les catégories CIQUAL
+  static double _estimateFruitsVegetablesNutsCiqual(String category) {
+    final category_lower = category.toLowerCase();
+    
+    // Fruits
+    if (category_lower.contains('fruits')) {
+      return 100.0;
+    }
+    
+    // Légumes
+    if (category_lower.contains('légumes') || category_lower.contains('végétaux')) {
+      return 85.0;
+    }
+    
+    // Noix et graines
+    if (category_lower.contains('noix') || category_lower.contains('graines') || 
+        category_lower.contains('oléagineux')) {
+      return 95.0;
+    }
+    
+    // Produits à base de fruits/légumes
+    if (category_lower.contains('jus de fruits') || category_lower.contains('compotes')) {
+      return 90.0;
+    }
+    
+    return 0.0; // Par défaut pour les autres catégories
   }
 }

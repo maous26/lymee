@@ -717,6 +717,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                     children: [
                       NutritionScoreBadge(
                         score: (food.nutritionScore ?? 0).toDouble(),
+                        nutriScoreGrade: food.nutriScoreGrade,
                         size: 60,
                         showLabel: false,
                       ),
