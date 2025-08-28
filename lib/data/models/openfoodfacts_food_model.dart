@@ -86,8 +86,8 @@ class OpenFoodFactsFoodModel extends FoodItem {
       allergens: product['allergens_tags'] != null
           ? List<String>.from(product['allergens_tags'])
           : null,
-      nutriscore: product['nutriscore_grade'] ?? _calculateOfficialNutriScore(product, nutrients),
-      nutritionScore: _convertNutriScoreToNumeric(product['nutriscore_grade'] ?? _calculateOfficialNutriScore(product, nutrients)),
+      nutriscore: (product['nutriscore_grade']?.toString().toUpperCase()) ?? _calculateOfficialNutriScore(product, nutrients),
+      nutritionScore: _convertNutriScoreToNumeric((product['nutriscore_grade']?.toString().toUpperCase()) ?? _calculateOfficialNutriScore(product, nutrients)),
     );
   }
 

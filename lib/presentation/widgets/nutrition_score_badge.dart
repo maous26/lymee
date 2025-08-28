@@ -51,12 +51,12 @@ class _NutritionScoreBadgeState extends State<NutritionScoreBadge>
     final theme = Theme.of(context);
     
     // Utiliser le grade Nutri-Score si disponible, sinon le score numérique
-    final displayText = widget.nutriScoreGrade ?? widget.score.toStringAsFixed(1);
+    final displayText = widget.nutriScoreGrade?.toUpperCase() ?? widget.score.toStringAsFixed(1);
     final color = widget.nutriScoreGrade != null 
-        ? _getNutriScoreColor(widget.nutriScoreGrade!)
+        ? _getNutriScoreColor(widget.nutriScoreGrade!.toUpperCase())
         : FreshTheme.getNutritionScoreColor(widget.score);
     final label = widget.nutriScoreGrade != null 
-        ? _getNutriScoreLabel(widget.nutriScoreGrade!)
+        ? _getNutriScoreLabel(widget.nutriScoreGrade!.toUpperCase())
         : FreshTheme.getNutritionScoreLabel(widget.score);
     const badgeIcon = Icons.eco_rounded; // Health/eco icon
 

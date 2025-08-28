@@ -716,7 +716,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                   Row(
                     children: [
                       NutritionScoreBadge(
-                        score: (food.nutritionScore ?? 0).toDouble(),
+                        score: food.nutritionScore,
                         nutriScoreGrade: food.nutriScoreGrade,
                         size: 60,
                         showLabel: false,
@@ -728,11 +728,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                           children: [
                             Text(
                               _getNutritionScoreLabel(
-                                  (food.nutritionScore ?? 'N/A').toString()),
+                                  food.nutriScoreGrade?.toUpperCase() ?? food.nutritionScore.toString()),
                               style: textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: _getNutritionScoreColor(
-                                    (food.nutritionScore ?? 'N/A').toString()),
+                                    food.nutriScoreGrade?.toUpperCase() ?? food.nutritionScore.toString()),
                               ),
                             ),
                             const SizedBox(height: 4),
