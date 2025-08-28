@@ -78,7 +78,7 @@ void main() {
           print('  Image URL: $imageUrl');
 
           // Test the search filtering logic
-          final query = 'thon';
+          const query = 'thon';
           final normalizedQuery = _normalizeString(query);
           final normalizedName = _normalizeString(name);
           final normalizedCategory = _normalizeString(category);

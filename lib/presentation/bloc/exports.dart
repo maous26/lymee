@@ -8,3 +8,6 @@ export 'food_detail/food_detail_state.dart';
 export 'food_history/food_history_bloc.dart';
 export 'food_history/food_history_event.dart';
 export 'food_history/food_history_state.dart';
+export 'auth/auth_bloc.dart';
+export 'auth/auth_event.dart';
+export 'auth/auth_state.dart';

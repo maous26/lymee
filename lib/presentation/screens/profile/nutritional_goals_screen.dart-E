@@ -1,0 +1,504 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_bloc.dart';
+import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_state.dart';
+import 'package:lym_nutrition/presentation/themes/enhanced_theme.dart';
+import 'package:lym_nutrition/presentation/widgets/info_tooltip.dart';
+import 'package:lym_nutrition/domain/entities/user_profile.dart' as entities;
+
+class NutritionalGoalsScreen extends StatefulWidget {
+  const NutritionalGoalsScreen({super.key});
+
+  @override
+  State<NutritionalGoalsScreen> createState() => _NutritionalGoalsScreenState();
+}
+
+class _NutritionalGoalsScreenState extends State<NutritionalGoalsScreen> {
+  double _calorieGoal = 2000;
+  double _proteinGoal = 150;
+  double _carbsGoal = 250;
+  double _fatsGoal = 67;
+  entities.WeightGoal _weightGoal = entities.WeightGoal.maintain;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final profileState = context.read<UserProfileBloc>().state;
+    if (profileState is UserProfileLoaded) {
+      final profile = profileState.userProfile;
+      // Load goals from profile if available
+      _calorieGoal = 2000; // Default or from profile
+      _proteinGoal = 150;
+      _carbsGoal = 250;
+      _fatsGoal = 67;
+      _weightGoal = profile.weightGoal;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: EnhancedTheme.neutralGray50,
+      appBar: AppBar(
+        title: const Text('Objectifs nutritionnels'),
+        backgroundColor: EnhancedTheme.primaryTeal,
+        foregroundColor: EnhancedTheme.neutralWhite,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(EnhancedTheme.spacingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(EnhancedTheme.spacingL),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    EnhancedTheme.secondaryOrange,
+                    EnhancedTheme.secondaryOrangeLight,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(EnhancedTheme.radiusM),
+                boxShadow: EnhancedTheme.glowOrange,
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(EnhancedTheme.spacingM),
+                    decoration: BoxDecoration(
+                      color: EnhancedTheme.neutralWhite.withValues(alpha: 0.2),
+                      borderRadius:
+                          BorderRadius.circular(EnhancedTheme.radiusXL),
+                    ),
+                    child: Icon(
+                      Icons.track_changes,
+                      size: 40,
+                      color: EnhancedTheme.neutralWhite,
+                    ),
+                  ),
+                  const SizedBox(height: EnhancedTheme.spacingM),
+                  Text(
+                    'Vos objectifs',
+                    style: EnhancedTheme.textTheme.headlineMedium?.copyWith(
+                      color: EnhancedTheme.neutralWhite,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: EnhancedTheme.spacingS),
+                  Text(
+                    'Personnalisez vos objectifs nutritionnels quotidiens',
+                    textAlign: TextAlign.center,
+                    style: EnhancedTheme.textTheme.bodyMedium?.copyWith(
+                      color: EnhancedTheme.neutralWhite.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: EnhancedTheme.spacingL),
+
+            // Weight Goal Section
+            _buildGoalCard(
+              title: 'Objectif de poids',
+              icon: Icons.trending_up,
+              color: EnhancedTheme.primaryTeal,
+              children: [
+                Text(
+                  'Quel est votre objectif principal ?',
+                  style: EnhancedTheme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: EnhancedTheme.spacingM),
+                Wrap(
+                  spacing: EnhancedTheme.spacingS,
+                  children: [
+                    _buildGoalChip('Perdre', entities.WeightGoal.lose),
+                    _buildGoalChip('Maintenir', entities.WeightGoal.maintain),
+                    _buildGoalChip('Prendre', entities.WeightGoal.gain),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: EnhancedTheme.spacingM),
+
+            // Calorie Goal Section
+            MacroInfoTooltip(
+              child: _buildGoalCard(
+                title: 'Objectif calorique quotidien',
+                icon: Icons.local_fire_department,
+                color: EnhancedTheme.errorRed,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Calories par jour',
+                        style: EnhancedTheme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: EnhancedTheme.spacingS),
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: EnhancedTheme.primaryTeal.withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: EnhancedTheme.spacingM),
+                  _buildSlider(
+                    value: _calorieGoal,
+                    min: 1200,
+                    max: 3500,
+                    divisions: 46,
+                    label: '${_calorieGoal.round()} kcal',
+                    onChanged: (value) => setState(() => _calorieGoal = value),
+                    color: EnhancedTheme.errorRed,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: EnhancedTheme.spacingM),
+
+            // Macronutrients Section
+            _buildGoalCard(
+              title: 'Répartition des macronutriments',
+              icon: Icons.pie_chart,
+              color: EnhancedTheme.secondaryOrange,
+              children: [
+                // Proteins
+                _buildMacroSlider(
+                  'Protéines',
+                  _proteinGoal,
+                  'g',
+                  50,
+                  300,
+                  EnhancedTheme.successGreen,
+                  (value) => setState(() => _proteinGoal = value),
+                ),
+                const SizedBox(height: EnhancedTheme.spacingL),
+
+                // Carbs
+                _buildMacroSlider(
+                  'Glucides',
+                  _carbsGoal,
+                  'g',
+                  100,
+                  500,
+                  EnhancedTheme.infoBlue,
+                  (value) => setState(() => _carbsGoal = value),
+                ),
+                const SizedBox(height: EnhancedTheme.spacingL),
+
+                // Fats
+                _buildMacroSlider(
+                  'Lipides',
+                  _fatsGoal,
+                  'g',
+                  30,
+                  150,
+                  EnhancedTheme.warningYellow,
+                  (value) => setState(() => _fatsGoal = value),
+                ),
+
+                const SizedBox(height: EnhancedTheme.spacingM),
+
+                // Macro breakdown
+                Container(
+                  padding: const EdgeInsets.all(EnhancedTheme.spacingM),
+                  decoration: BoxDecoration(
+                    color: EnhancedTheme.neutralGray50,
+                    borderRadius: BorderRadius.circular(EnhancedTheme.radiusS),
+                    border: Border.all(color: EnhancedTheme.neutralGray200),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Répartition calorique',
+                        style: EnhancedTheme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: EnhancedTheme.spacingS),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildMacroPercentage(
+                            'Protéines',
+                            (_proteinGoal * 4 / _calorieGoal * 100),
+                            EnhancedTheme.successGreen,
+                          ),
+                          _buildMacroPercentage(
+                            'Glucides',
+                            (_carbsGoal * 4 / _calorieGoal * 100),
+                            EnhancedTheme.infoBlue,
+                          ),
+                          _buildMacroPercentage(
+                            'Lipides',
+                            (_fatsGoal * 9 / _calorieGoal * 100),
+                            EnhancedTheme.warningYellow,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: EnhancedTheme.spacingXL),
+
+            // Save Button
+            Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    EnhancedTheme.primaryTeal,
+                    EnhancedTheme.primaryTealLight,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(EnhancedTheme.radiusM),
+                boxShadow: EnhancedTheme.glowTeal,
+              ),
+              child: ElevatedButton(
+                onPressed: _saveGoals,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(EnhancedTheme.radiusM),
+                  ),
+                ),
+                child: Text(
+                  'Enregistrer les objectifs',
+                  style: EnhancedTheme.textTheme.labelLarge?.copyWith(
+                    color: EnhancedTheme.neutralWhite,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoalCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(EnhancedTheme.spacingL),
+      decoration: BoxDecoration(
+        color: EnhancedTheme.neutralWhite,
+        borderRadius: BorderRadius.circular(EnhancedTheme.radiusM),
+        boxShadow: EnhancedTheme.shadowLight,
+        border: Border.all(
+          color: EnhancedTheme.neutralGray200,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(EnhancedTheme.spacingS),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(EnhancedTheme.radiusS),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: EnhancedTheme.spacingS),
+              Expanded(
+                child: Text(
+                  title,
+                  style: EnhancedTheme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: EnhancedTheme.neutralGray800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: EnhancedTheme.spacingM),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlider({
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required String label,
+    required ValueChanged<double> onChanged,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('${min.round()}'),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: EnhancedTheme.spacingS,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(EnhancedTheme.radiusS),
+              ),
+              child: Text(
+                label,
+                style: EnhancedTheme.textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text('${max.round()}'),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: color,
+            thumbColor: color,
+            overlayColor: color.withValues(alpha: 0.2),
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMacroSlider(
+    String label,
+    double value,
+    String unit,
+    double min,
+    double max,
+    Color color,
+    ValueChanged<double> onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: EnhancedTheme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: EnhancedTheme.spacingS),
+        _buildSlider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: ((max - min) / 10).round(),
+          label: '${value.round()} $unit',
+          onChanged: onChanged,
+          color: color,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMacroPercentage(String label, double percentage, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: EnhancedTheme.textTheme.labelSmall?.copyWith(
+            color: EnhancedTheme.neutralGray600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${percentage.round()}%',
+          style: EnhancedTheme.textTheme.labelMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoalChip(String label, entities.WeightGoal goal) {
+    final isSelected = _weightGoal == goal;
+    return GestureDetector(
+      onTap: () => setState(() => _weightGoal = goal),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(
+          horizontal: EnhancedTheme.spacingM,
+          vertical: EnhancedTheme.spacingS,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? EnhancedTheme.primaryTeal
+              : EnhancedTheme.neutralGray100,
+          borderRadius: BorderRadius.circular(EnhancedTheme.radiusL),
+          border: Border.all(
+            color: isSelected
+                ? EnhancedTheme.primaryTeal
+                : EnhancedTheme.neutralGray300,
+          ),
+          boxShadow: isSelected ? EnhancedTheme.shadowLight : null,
+        ),
+        child: Text(
+          label,
+          style: EnhancedTheme.textTheme.labelMedium?.copyWith(
+            color: isSelected
+                ? EnhancedTheme.neutralWhite
+                : EnhancedTheme.neutralGray700,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _saveGoals() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Objectifs enregistrés avec succès !'),
+        backgroundColor: EnhancedTheme.successGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(EnhancedTheme.radiusS),
+        ),
+      ),
+    );
+    Navigator.of(context).pop();
+  }
+}

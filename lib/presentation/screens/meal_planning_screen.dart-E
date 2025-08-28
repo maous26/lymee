@@ -1,0 +1,1824 @@
+// lib/presentation/screens/meal_planning_screen.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lym_nutrition/presentation/screens/food_search_screen.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
+
+import 'package:lym_nutrition/domain/entities/user_profile.dart';
+import 'package:lym_nutrition/domain/entities/user_dietary_preferences.dart';
+import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_bloc.dart';
+import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_state.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class MealPlanningScreen extends StatefulWidget {
+  const MealPlanningScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MealPlanningScreen> createState() => _MealPlanningScreenState();
+}
+
+class _MealPlanningScreenState extends State<MealPlanningScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _isGeneratingMeals = false;
+  List<MealSuggestion> _dailyMeals = [];
+  Map<String, List<MealSuggestion>> _weeklyMeals = {};
+  PlanType _selectedPlanType = PlanType.daily;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Mes repas',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        backgroundColor: FreshTheme.primaryMint,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                FreshTheme.primaryMint,
+                FreshTheme.serenityBlue,
+              ],
+            ),
+          ),
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.search_rounded),
+              text: 'Recherche',
+            ),
+            Tab(
+              icon: Icon(Icons.auto_awesome_rounded),
+              text: 'IA Coach',
+            ),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Manual search tab
+          const FoodSearchScreen(),
+
+          // AI meal planning tab
+          _buildAIMealPlanningTab(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIMealPlanningTab() {
+    return BlocBuilder<UserProfileBloc, UserProfileState>(
+      builder: (context, state) {
+        if (state is UserProfileLoaded) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  FreshTheme.cloudWhite,
+                  FreshTheme.mistGray.withAlpha(100),
+                ],
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FutureBuilder<Map<String, dynamic>>(
+                    future: _getConsumedMealsToday(),
+                    builder: (context, snapshot) {
+                      // SECURISE: Vérifie que snapshot.data et la clé 'calories' ne sont pas null
+                      if (snapshot.hasData &&
+                          (snapshot.data?['calories'] ?? 0) > 0) {
+                        return _buildConsumedMealsInfo(snapshot.data!);
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPlanTypeSelector(),
+                  const SizedBox(height: 20),
+                  _buildGenerateButton(state.userProfile),
+                  const SizedBox(height: 20),
+                  if (_isGeneratingMeals)
+                    const Center(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('L\'IA prépare vos repas...'),
+                        ],
+                      ),
+                    ),
+                  if (!_isGeneratingMeals &&
+                      _selectedPlanType == PlanType.daily &&
+                      _dailyMeals.isNotEmpty)
+                    _buildDailyMealPlan(),
+                  if (!_isGeneratingMeals &&
+                      _selectedPlanType == PlanType.weekly &&
+                      _weeklyMeals.isNotEmpty)
+                    _buildWeeklyMealPlan(),
+                ],
+              ),
+            ),
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
+  Widget _buildConsumedMealsInfo(Map<String, dynamic> consumedData) {
+    final calories = (consumedData['calories'] as double? ?? 0.0).round();
+    final protein = (consumedData['protein'] as double? ?? 0.0).round();
+    final carbs = (consumedData['carbs'] as double? ?? 0.0).round();
+    final fat = (consumedData['fat'] as double? ?? 0.0).round();
+    final mealTypes = consumedData['mealTypes'] as List<String>? ?? [];
+
+    return Card(
+      elevation: 2,
+      shadowColor: FreshTheme.primaryMint.withAlpha(60),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline,
+                    color: FreshTheme.primaryMint, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Repas déjà consommés aujourd\'hui',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: FreshTheme.primaryMint,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'L\'IA tiendra compte de ces repas pour proposer les repas restants:',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: FreshTheme.stormGray,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNutrientInfo('Calories', '$calories', Colors.orange),
+                  const SizedBox(width: 16),
+                  _buildNutrientInfo('Protéines', '${protein}g', Colors.blue),
+                  const SizedBox(width: 16),
+                  _buildNutrientInfo('Glucides', '${carbs}g', Colors.green),
+                  const SizedBox(width: 16),
+                  _buildNutrientInfo('Lipides', '${fat}g', Colors.redAccent),
+                ],
+              ),
+            ),
+            if (mealTypes.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Types de repas: ${mealTypes.join(', ')}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: FreshTheme.stormGray,
+                    ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNutrientInfo(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlanTypeSelector() {
+    return Container(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calendar_today, color: FreshTheme.primaryMint),
+              const SizedBox(width: 12),
+              Text(
+                'Type de planification',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: FreshTheme.primaryMint,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildPlanTypeOption(
+                  PlanType.daily,
+                  'Journée',
+                  Icons.today,
+                  'Plan pour aujourd\'hui',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPlanTypeOption(
+                  PlanType.weekly,
+                  'Semaine',
+                  Icons.date_range,
+                  'Plan sur 7 jours',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanTypeOption(
+      PlanType type, String label, IconData icon, String description) {
+    final isSelected = _selectedPlanType == type;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedPlanType = type;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color:
+              isSelected ? FreshTheme.primaryMint.withAlpha(30) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? FreshTheme.primaryMint : FreshTheme.mistGray,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: FreshTheme.primaryMint.withAlpha(50),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? FreshTheme.primaryMint : FreshTheme.stormGray,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? FreshTheme.primaryMintDark
+                        : FreshTheme.midnightGray,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: FreshTheme.stormGray,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenerateButton(UserProfile userProfile) {
+    return Center(
+      child: ElevatedButton.icon(
+        onPressed:
+            _isGeneratingMeals ? null : () => _generateMealPlan(userProfile),
+        icon: const Icon(Icons.auto_awesome),
+        label: Text(_selectedPlanType == PlanType.daily
+            ? 'Générer le plan du jour'
+            : 'Générer le plan de la semaine'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: FreshTheme.primaryMint,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 5,
+          shadowColor: FreshTheme.primaryMint.withAlpha(100),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyMealPlan() {
+    final totals = _calculateTotals(_dailyMeals);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Plan du jour',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: FreshTheme.primaryMint,
+                  ),
+            ),
+            _buildActionButtons(),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Totals Card
+        _buildTotalsCard(totals),
+        const SizedBox(height: 16),
+
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _dailyMeals.length,
+          itemBuilder: (context, index) {
+            final meal = _dailyMeals[index];
+            return _buildMealCard(meal, index, null);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeeklyMealPlan() {
+    final days = [
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+      'Dimanche'
+    ];
+
+    // Calculate weekly totals
+    final allMeals = <MealSuggestion>[];
+    for (final day in days) {
+      allMeals.addAll(_weeklyMeals[day] ?? []);
+    }
+    final weeklyTotals = _calculateTotals(allMeals);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Plan de la semaine',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: FreshTheme.primaryMint,
+                  ),
+            ),
+            _buildActionButtons(),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Weekly Totals Card
+        _buildTotalsCard(weeklyTotals),
+        const SizedBox(height: 16),
+
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: days.length,
+          itemBuilder: (context, index) {
+            final day = days[index];
+            final meals = _weeklyMeals[day] ?? [];
+            final dayTotals = _calculateTotals(meals);
+            return ExpansionTile(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide.none,
+              ),
+              collapsedShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide.none,
+              ),
+              backgroundColor: Colors.white,
+              collapsedBackgroundColor: FreshTheme.mistGray,
+              iconColor: FreshTheme.primaryMint,
+              collapsedIconColor: FreshTheme.stormGray,
+              childrenPadding: const EdgeInsets.symmetric(horizontal: 8),
+              title: Text(
+                day,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                '${meals.length} repas • ${dayTotals.calories} kcal',
+                style: const TextStyle(fontSize: 12),
+              ),
+              children: meals.asMap().entries.map((entry) {
+                final index = entry.key;
+                final meal = entry.value;
+                return _buildMealCard(meal, index, day);
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          color: FreshTheme.primaryMint,
+          tooltip: 'Nouveau programme',
+          onPressed: () => _showNewProgramDialog(),
+        ),
+        IconButton(
+          icon: const Icon(Icons.save_alt),
+          color: Colors.green,
+          tooltip: 'Sauvegarder',
+          onPressed: () => _saveMealPlan(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMealCard(MealSuggestion meal, int index, String? day) {
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(30),
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        meal.mealType,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: FreshTheme.primaryMint,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        meal.name,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.restaurant_menu, size: 20),
+                      color: Colors.orange,
+                      tooltip: 'Voir la recette',
+                      onPressed: () => _showRecipe(meal, index, day),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, size: 20),
+                      color: FreshTheme.primaryMint,
+                      tooltip: 'Ajouter à aujourd\'hui',
+                      onPressed: () => _saveSingleMeal(meal),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      color: Colors.blue,
+                      onPressed: () => _editMeal(meal, index, day),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, size: 20),
+                      color: Colors.red,
+                      onPressed: () => _deleteMeal(index, day),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              meal.description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: FreshTheme.stormGray,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildNutrientChip(
+                      'Calories', '${meal.calories} kcal', Colors.orange),
+                  const SizedBox(width: 8),
+                  _buildNutrientChip(
+                      'Protéines', '${meal.protein}g', Colors.blue),
+                  const SizedBox(width: 8),
+                  _buildNutrientChip(
+                      'Glucides', '${meal.carbs}g', Colors.green),
+                  const SizedBox(width: 8),
+                  _buildNutrientChip(
+                      'Lipides', '${meal.fat}g', Colors.redAccent),
+                ],
+              ),
+            ),
+            if (meal.cookingTime != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${meal.cookingTime} min',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNutrientChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> _getConsumedMealsToday() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Get all meals consumed today from different sources
+    double consumedCalories = 0;
+    double consumedProtein = 0;
+    double consumedCarbs = 0;
+    double consumedFat = 0;
+    List<String> consumedMealTypes = [];
+
+    // Check saved daily meals
+    final dailyMealsJson = prefs.getString('saved_daily_meals');
+    final dailyMealsDate = prefs.getString('saved_daily_meals_date');
+
+    if (dailyMealsJson != null && dailyMealsDate != null) {
+      final savedDate = DateTime.parse(dailyMealsDate);
+      final today = DateTime.now();
+
+      if (savedDate.year == today.year &&
+          savedDate.month == today.month &&
+          savedDate.day == today.day) {
+        final List<dynamic> meals = jsonDecode(dailyMealsJson);
+        for (final meal in meals) {
+          consumedCalories += (meal['calories'] ?? 0).toDouble();
+          consumedProtein += (meal['protein'] ?? 0).toDouble();
+          consumedCarbs += (meal['carbs'] ?? 0).toDouble();
+          consumedFat += (meal['fat'] ?? 0).toDouble();
+          consumedMealTypes.add(meal['mealType'] ?? '');
+        }
+      }
+    }
+
+    // Check individual meals
+    final individualMealsJson = prefs.getString('individual_meals_today');
+    if (individualMealsJson != null) {
+      final savedData = jsonDecode(individualMealsJson);
+      final savedDate = savedData['date'];
+      final todayDate = DateTime.now().toIso8601String().split('T')[0];
+
+      if (savedDate == todayDate) {
+        final List<dynamic> meals = savedData['meals'];
+        for (final meal in meals) {
+          consumedCalories += (meal['calories'] ?? 0).toDouble();
+          consumedProtein += (meal['protein'] ?? 0).toDouble();
+          consumedCarbs += (meal['carbs'] ?? 0).toDouble();
+          consumedFat += (meal['fat'] ?? 0).toDouble();
+          if (meal['mealType'] != null) {
+            consumedMealTypes.add(meal['mealType']);
+          }
+        }
+      }
+    }
+
+    return {
+      'calories': consumedCalories,
+      'protein': consumedProtein,
+      'carbs': consumedCarbs,
+      'fat': consumedFat,
+      'mealTypes': consumedMealTypes,
+    };
+  }
+
+  Future<void> _generateMealPlan(UserProfile userProfile) async {
+    setState(() {
+      _isGeneratingMeals = true;
+    });
+
+    try {
+      final apiKey = dotenv.env['OPENAI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        // Générer des repas simulés si pas d'API key
+        _generateSimulatedMeals(userProfile);
+        return;
+      }
+
+      // Get already consumed meals
+      final consumedToday = await _getConsumedMealsToday();
+
+      final prompt = _buildPrompt(userProfile, consumedToday);
+
+      final response = await http.post(
+        Uri.parse('https://api.openai.com/v1/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {
+              'role': 'system',
+              'content':
+                  'Tu es un nutritionniste expert qui crée des plans de repas personnalisés en français. '
+                      'Fournis toujours des réponses structurées en JSON valide.'
+            },
+            {
+              'role': 'user',
+              'content': prompt,
+            }
+          ],
+          'temperature': 0.7,
+          'max_tokens': 2000,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final content = data['choices'][0]['message']['content'];
+
+        // Clean the content to remove markdown formatting
+        String cleanContent = content.trim();
+        if (cleanContent.startsWith('```json')) {
+          cleanContent = cleanContent.substring(7);
+        }
+        if (cleanContent.endsWith('```')) {
+          cleanContent = cleanContent.substring(0, cleanContent.length - 3);
+        }
+        cleanContent = cleanContent.trim();
+
+        try {
+          // Parse the cleaned JSON response
+          final mealData = jsonDecode(cleanContent);
+
+          setState(() {
+            if (_selectedPlanType == PlanType.daily) {
+              _dailyMeals = (mealData['meals'] as List)
+                  .map((m) => MealSuggestion.fromJson(m))
+                  .toList();
+            } else {
+              _weeklyMeals = {};
+              (mealData['weekPlan'] as Map).forEach((day, meals) {
+                _weeklyMeals[day] = (meals as List)
+                    .map((m) => MealSuggestion.fromJson(m))
+                    .toList();
+              });
+            }
+            _isGeneratingMeals = false;
+          });
+        } catch (e) {
+          print('Error parsing meal data: $e');
+          throw Exception('Erreur lors du parsing des données: $e');
+        }
+      } else {
+        throw Exception('Failed to generate meal plan: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() {
+        _isGeneratingMeals = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String _buildPrompt(
+      UserProfile userProfile, Map<String, dynamic> consumedToday) {
+    final prefs = userProfile.mealPlanningPreferences;
+    final cookingLevel = _getCookingLevelText(prefs.cookingLevel);
+    final weekdayTime = _getCookingTimeText(prefs.weekdayCookingTime);
+    final weekendTime = _getCookingTimeText(prefs.weekendCookingTime);
+    final budget =
+        _getBudgetText(prefs.weeklyBudget, prefs.specificBudgetAmount);
+
+    if (_selectedPlanType == PlanType.daily) {
+      final targetCalories =
+          userProfile.calculateMacroTargets()['calories']?.round() ?? 2000;
+      final remainingCalories =
+          targetCalories - consumedToday['calories'].round();
+      final consumedMealTypes = consumedToday['mealTypes'] as List<String>;
+
+      String consumedInfo = '';
+      if (consumedToday['calories'] > 0) {
+        consumedInfo = '''
+
+IMPORTANT: L'utilisateur a déjà consommé aujourd'hui:
+- Calories: ${consumedToday['calories'].round()} kcal
+- Protéines: ${consumedToday['protein'].round()} g
+- Glucides: ${consumedToday['carbs'].round()} g
+- Lipides: ${consumedToday['fat'].round()} g
+- Repas déjà pris: ${consumedMealTypes.join(', ')}
+
+Il reste ${remainingCalories} kcal pour compléter la journée.
+Génère UNIQUEMENT les repas restants qui n'ont pas encore été pris.
+''';
+      }
+
+      return '''
+Crée un plan de repas pour une journée en tenant compte de ces préférences:
+- Objectif calorique total journalier: $targetCalories kcal
+- Niveau de cuisine: $cookingLevel
+- Temps de cuisine en semaine: $weekdayTime
+- Budget hebdomadaire: $budget
+- Préférences alimentaires: ${_getDietaryPreferencesText(userProfile.dietaryPreferences)}
+$consumedInfo
+
+Retourne un JSON avec cette structure:
+{
+  "meals": [
+    {
+      "mealType": "Petit-déjeuner",
+      "name": "Nom du plat",
+      "description": "Description courte",
+      "calories": 400,
+      "protein": 20,
+      "carbs": 50,
+      "fat": 15,
+      "cookingTime": 15
+    }
+  ]
+}
+
+Inclus 3-4 repas équilibrés pour la journée.
+''';
+    } else {
+      return '''
+Crée un plan de repas pour une semaine complète en tenant compte de ces préférences:
+- Objectif calorique journalier: ${userProfile.calculateMacroTargets()['calories']?.round()} kcal
+- Niveau de cuisine: $cookingLevel
+- Temps de cuisine en semaine: $weekdayTime
+- Temps de cuisine le weekend: $weekendTime
+- Budget hebdomadaire: $budget
+- Préférences alimentaires: ${_getDietaryPreferencesText(userProfile.dietaryPreferences)}
+
+Retourne un JSON avec cette structure:
+{
+  "weekPlan": {
+    "Lundi": [
+      {
+        "mealType": "Petit-déjeuner",
+        "name": "Nom du plat",
+        "description": "Description courte",
+        "calories": 400,
+        "protein": 20,
+        "carbs": 50,
+        "fat": 15,
+        "cookingTime": 15
+      }
+    ],
+    "Mardi": [...],
+    ...
+  }
+}
+
+Varie les repas et respecte le temps de cuisine disponible.
+''';
+    }
+  }
+
+  String _getCookingLevelText(CookingLevel level) {
+    switch (level) {
+      case CookingLevel.beginner:
+        return 'Débutant';
+      case CookingLevel.intermediate:
+        return 'Intermédiaire';
+      case CookingLevel.advanced:
+        return 'Avancé';
+      case CookingLevel.expert:
+        return 'Expert';
+    }
+  }
+
+  String _getCookingTimeText(CookingTime time) {
+    switch (time) {
+      case CookingTime.minimal:
+        return '< 15 min';
+      case CookingTime.short:
+        return '15-30 min';
+      case CookingTime.moderate:
+        return '30-60 min';
+      case CookingTime.long:
+        return '> 60 min';
+    }
+  }
+
+  String _getBudgetText(FoodBudget budget, double? specificAmount) {
+    if (specificAmount != null) {
+      return '${specificAmount.round()}€/semaine';
+    }
+    switch (budget) {
+      case FoodBudget.tight:
+        return '< 50€/semaine';
+      case FoodBudget.moderate:
+        return '50-100€/semaine';
+      case FoodBudget.comfortable:
+        return '100-150€/semaine';
+      case FoodBudget.generous:
+        return '> 150€/semaine';
+    }
+  }
+
+  String _getDietaryPreferencesText(UserDietaryPreferences prefs) {
+    List<String> preferences = [];
+    if (prefs.isVegetarian) preferences.add('Végétarien');
+    if (prefs.isVegan) preferences.add('Végétalien');
+    if (prefs.isHalal) preferences.add('Halal');
+    if (prefs.isKosher) preferences.add('Casher');
+    if (prefs.isGlutenFree) preferences.add('Sans gluten');
+    if (prefs.isLactoseFree) preferences.add('Sans lactose');
+    if (prefs.allergies.isNotEmpty) {
+      preferences.add('Allergies: ${prefs.allergies.join(', ')}');
+    }
+    return preferences.isEmpty ? 'Aucune' : preferences.join(', ');
+  }
+
+  void _editMeal(MealSuggestion meal, int index, String? day) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modifier le repas'),
+        content: const Text(
+            'Fonctionnalité à venir: modification manuelle des repas'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteMeal(int index, String? day) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer ce repas?'),
+        content: const Text('Cette action est irréversible.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                if (day == null) {
+                  _dailyMeals.removeAt(index);
+                } else {
+                  _weeklyMeals[day]?.removeAt(index);
+                }
+              });
+              Navigator.of(context).pop();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNewProgramDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nouveau programme'),
+        content: const Text('Voulez-vous générer un nouveau plan de repas?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              final userProfile = context.read<UserProfileBloc>().state;
+              if (userProfile is UserProfileLoaded) {
+                _generateMealPlan(userProfile.userProfile);
+              }
+            },
+            child: const Text('Générer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _saveMealPlan() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      if (_selectedPlanType == PlanType.daily) {
+        // Save daily meals
+        final mealsJson = _dailyMeals.map((meal) => meal.toJson()).toList();
+        final dateString = DateTime.now().toIso8601String();
+
+        print('Saving daily meals: ${mealsJson.length} meals');
+        print('Date string: $dateString');
+
+        await prefs.setString('saved_daily_meals', jsonEncode(mealsJson));
+        await prefs.setString('saved_daily_meals_date', dateString);
+
+        // Verify save
+        final savedJson = prefs.getString('saved_daily_meals');
+        final savedDate = prefs.getString('saved_daily_meals_date');
+        print(
+            'Verification - Saved JSON: ${savedJson != null ? 'Success' : 'Failed'}');
+        print('Verification - Saved Date: $savedDate');
+      } else {
+        // Save weekly meals
+        final weeklyJson = _weeklyMeals.map((day, meals) =>
+            MapEntry(day, meals.map((meal) => meal.toJson()).toList()));
+        await prefs.setString('saved_weekly_meals', jsonEncode(weeklyJson));
+        await prefs.setString(
+            'saved_weekly_meals_date', DateTime.now().toIso8601String());
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Plan de repas sauvegardé!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('Error saving meal plan: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la sauvegarde: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _saveSingleMeal(MealSuggestion meal) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Get existing individual meals for today
+      final existingMealsJson = prefs.getString('individual_meals_today');
+      final todayDate = DateTime.now().toIso8601String().split('T')[0];
+
+      List<Map<String, dynamic>> individualMeals = [];
+
+      if (existingMealsJson != null) {
+        final savedData = jsonDecode(existingMealsJson);
+        final savedDate = savedData['date'];
+
+        // Check if saved meals are from today
+        if (savedDate == todayDate) {
+          individualMeals = List<Map<String, dynamic>>.from(savedData['meals']);
+        }
+      }
+
+      // Add the new meal
+      individualMeals.add(meal.toJson());
+
+      // Save back
+      await prefs.setString(
+          'individual_meals_today',
+          jsonEncode({
+            'date': todayDate,
+            'meals': individualMeals,
+          }));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${meal.name} ajouté au plan du jour!'),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'Voir',
+            textColor: Colors.white,
+            onPressed: () {
+              // Navigate back to dashboard - this will trigger a refresh
+              if (Navigator.canPop(context)) {
+                Navigator.pop(
+                    context, true); // Return true to indicate meals were saved
+              } else {
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/home', (route) => false);
+              }
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de l\'ajout: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildTotalsCard(MealTotals totals) {
+    return Card(
+      elevation: 2,
+      shadowColor: FreshTheme.primaryMint.withAlpha(60),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: FreshTheme.primaryMint.withAlpha(20),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.analytics, color: FreshTheme.primaryMint),
+                const SizedBox(width: 12),
+                Text(
+                  'Totaux nutritionnels',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: FreshTheme.primaryMint,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTotalItem(
+                    'Calories',
+                    '${totals.calories}',
+                    'kcal',
+                    Colors.orange,
+                    Icons.local_fire_department,
+                  ),
+                ),
+                Expanded(
+                  child: _buildTotalItem(
+                    'Protéines',
+                    '${totals.protein}',
+                    'g',
+                    Colors.blueAccent,
+                    Icons.fitness_center,
+                  ),
+                ),
+                Expanded(
+                  child: _buildTotalItem(
+                    'Glucides',
+                    '${totals.carbs}',
+                    'g',
+                    Colors.green,
+                    Icons.grain,
+                  ),
+                ),
+                Expanded(
+                  child: _buildTotalItem(
+                    'Lipides',
+                    '${totals.fat}',
+                    'g',
+                    Colors.redAccent,
+                    Icons.water_drop,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalItem(
+      String label, String value, String unit, Color color, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          unit,
+          style: TextStyle(
+            fontSize: 12,
+            color: color.withAlpha(200),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: FreshTheme.stormGray,
+              ),
+        ),
+      ],
+    );
+  }
+
+  MealTotals _calculateTotals(List<MealSuggestion> meals) {
+    int totalCalories = 0;
+    int totalProtein = 0;
+    int totalCarbs = 0;
+    int totalFat = 0;
+
+    for (final meal in meals) {
+      totalCalories += meal.calories;
+      totalProtein += meal.protein;
+      totalCarbs += meal.carbs;
+      totalFat += meal.fat;
+    }
+
+    return MealTotals(
+      calories: totalCalories,
+      protein: totalProtein,
+      carbs: totalCarbs,
+      fat: totalFat,
+    );
+  }
+
+  void _generateSimulatedMeals(UserProfile userProfile) {
+    setState(() {
+      _isGeneratingMeals = true;
+    });
+
+    // Simuler un d\u00e9lai de g\u00e9n\u00e9ration
+    Future.delayed(const Duration(seconds: 2), () {
+      final targetCalories = userProfile.calculateDailyCalories().round();
+      final mealsPerDay =
+          4; // Petit-d\u00e9jeuner, D\u00e9jeuner, Collation, D\u00eener
+      final caloriesPerMeal = targetCalories ~/ mealsPerDay;
+
+      if (_selectedPlanType == PlanType.daily) {
+        _dailyMeals = [
+          MealSuggestion(
+            mealType: 'Petit-d\u00e9jeuner',
+            name: 'Porridge aux fruits',
+            description: 'Flocons d\'avoine, banane, myrtilles et amandes',
+            calories: caloriesPerMeal,
+            protein: 15,
+            carbs: 60,
+            fat: 12,
+            cookingTime: 10,
+          ),
+          MealSuggestion(
+            mealType: 'D\u00e9jeuner',
+            name: 'Salade de poulet grill\u00e9',
+            description:
+                'Poulet, quinoa, l\u00e9gumes verts, vinaigrette l\u00e9g\u00e8re',
+            calories: caloriesPerMeal + 100,
+            protein: 35,
+            carbs: 40,
+            fat: 15,
+            cookingTime: 20,
+          ),
+          MealSuggestion(
+            mealType: 'Collation',
+            name: 'Yaourt grec et noix',
+            description: 'Yaourt nature, noix m\u00e9lang\u00e9es, miel',
+            calories: caloriesPerMeal - 150,
+            protein: 12,
+            carbs: 20,
+            fat: 8,
+            cookingTime: 5,
+          ),
+          MealSuggestion(
+            mealType: 'D\u00eener',
+            name: 'Saumon aux l\u00e9gumes',
+            description: 'Saumon grill\u00e9, brocoli, patates douces',
+            calories: caloriesPerMeal + 50,
+            protein: 30,
+            carbs: 35,
+            fat: 18,
+            cookingTime: 25,
+          ),
+        ];
+      } else {
+        // G\u00e9n\u00e9rer une semaine compl\u00e8te
+        final days = [
+          'Lundi',
+          'Mardi',
+          'Mercredi',
+          'Jeudi',
+          'Vendredi',
+          'Samedi',
+          'Dimanche'
+        ];
+        _weeklyMeals = {};
+
+        for (final day in days) {
+          _weeklyMeals[day] = [
+            MealSuggestion(
+              mealType: 'Petit-d\u00e9jeuner',
+              name: 'Petit-d\u00e9jeuner \u00e9quilibr\u00e9',
+              description: 'Vari\u00e9 selon le jour',
+              calories: caloriesPerMeal,
+              protein: 15,
+              carbs: 50,
+              fat: 10,
+              cookingTime: 15,
+            ),
+            MealSuggestion(
+              mealType: 'D\u00e9jeuner',
+              name: 'D\u00e9jeuner complet',
+              description: 'Prot\u00e9ines, l\u00e9gumes et f\u00e9culents',
+              calories: caloriesPerMeal + 100,
+              protein: 30,
+              carbs: 45,
+              fat: 15,
+              cookingTime: 30,
+            ),
+            MealSuggestion(
+              mealType: 'D\u00eener',
+              name: 'D\u00eener l\u00e9ger',
+              description: 'Repas \u00e9quilibr\u00e9 et digestible',
+              calories: caloriesPerMeal,
+              protein: 25,
+              carbs: 35,
+              fat: 12,
+              cookingTime: 25,
+            ),
+          ];
+        }
+      }
+
+      setState(() {
+        _isGeneratingMeals = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Plan de repas g\u00e9n\u00e9r\u00e9 (mode simulation)'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    });
+  }
+
+  void _showRecipe(MealSuggestion meal, int index, String? day) async {
+    // Si la recette n'existe pas encore, la générer
+    if (meal.recipe == null || meal.recipe!.isEmpty) {
+      // Afficher un dialog de chargement
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Génération de la recette...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Générer la recette
+      final recipe = await _generateRecipe(meal);
+
+      // Fermer le dialog de chargement
+      Navigator.of(context).pop();
+
+      // Mettre à jour le repas avec la recette
+      setState(() {
+        meal.recipe = recipe;
+        if (day == null) {
+          _dailyMeals[index] = MealSuggestion(
+            mealType: meal.mealType,
+            name: meal.name,
+            description: meal.description,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat,
+            cookingTime: meal.cookingTime,
+            recipe: recipe,
+          );
+        } else {
+          final meals = _weeklyMeals[day];
+          if (meals != null) {
+            meals[index] = MealSuggestion(
+              mealType: meal.mealType,
+              name: meal.name,
+              description: meal.description,
+              calories: meal.calories,
+              protein: meal.protein,
+              carbs: meal.carbs,
+              fat: meal.fat,
+              cookingTime: meal.cookingTime,
+              recipe: recipe,
+            );
+            _weeklyMeals[day] = meals;
+          }
+        }
+      });
+    }
+
+    // Afficher la recette
+    _showRecipeDialog(meal);
+  }
+
+  Future<String> _generateRecipe(MealSuggestion meal) async {
+    try {
+      final apiKey = dotenv.env['OPENAI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        // Générer une recette simulée
+        return _generateSimulatedRecipe(meal);
+      }
+
+      final response = await http.post(
+        Uri.parse('https://api.openai.com/v1/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {
+              'role': 'system',
+              'content':
+                  'Tu es un chef cuisinier expert. Génère des recettes détaillées en français.'
+            },
+            {
+              'role': 'user',
+              'content': '''Génère une recette détaillée pour: ${meal.name}
+              
+La recette doit:
+              - Avoir environ ${meal.calories} calories
+              - Contenir ${meal.protein}g de protéines
+              - Prendre environ ${meal.cookingTime ?? 30} minutes
+              - Être claire et facile à suivre
+              
+Format:
+              Ingrédients:
+              - [liste des ingrédients avec quantités]
+              
+Instructions:
+              1. [première étape]
+              2. [deuxième étape]
+              etc.
+              
+Conseils:
+              [conseils optionnels]'''
+            }
+          ],
+          'temperature': 0.7,
+          'max_tokens': 800,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['choices'][0]['message']['content'];
+      } else {
+        throw Exception('Erreur API: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Erreur génération recette: $e');
+      return _generateSimulatedRecipe(meal);
+    }
+  }
+
+  String _generateSimulatedRecipe(MealSuggestion meal) {
+    // Générer une recette simulée basée sur le nom du plat
+    final portions = 2;
+    final ingredientsList = _getIngredientsForMeal(meal.name);
+    final instructions = _getInstructionsForMeal(meal.name);
+
+    return '''Ingrédients (pour $portions personnes):
+$ingredientsList
+
+Instructions:
+$instructions
+
+Temps de préparation: ${(meal.cookingTime ?? 30) ~/ 3} minutes
+Temps de cuisson: ${(meal.cookingTime ?? 30) * 2 ~/ 3} minutes
+
+Valeurs nutritionnelles par portion:
+- Calories: ${meal.calories} kcal
+- Protéines: ${meal.protein}g
+- Glucides: ${meal.carbs}g
+- Lipides: ${meal.fat}g
+
+Conseils:
+- Vous pouvez ajuster les quantités selon vos besoins
+- Servir chaud pour un meilleur goût''';
+  }
+
+  String _getIngredientsForMeal(String mealName) {
+    final lowerName = mealName.toLowerCase();
+
+    if (lowerName.contains('porridge')) {
+      return '''- 80g de flocons d'avoine
+- 250ml de lait (ou lait végétal)
+- 1 banane
+- 100g de myrtilles
+- 30g d'amandes efilées
+- 1 cuillère à café de miel
+- 1 pincée de cannelle''';
+    } else if (lowerName.contains('salade') && lowerName.contains('poulet')) {
+      return '''- 300g de blancs de poulet
+- 150g de quinoa
+- 200g de mélange de salades vertes
+- 1 concombre
+- 2 tomates
+- 1 avocat
+- 2 cuillères à soupe d'huile d'olive
+- Jus d'1 citron
+- Sel et poivre''';
+    } else if (lowerName.contains('saumon')) {
+      return '''- 2 filets de saumon (300g)
+- 400g de brocoli
+- 2 patates douces moyennes
+- 2 cuillères à soupe d'huile d'olive
+- 2 gousses d'ail
+- Herbes de Provence
+- Sel et poivre''';
+    } else {
+      return '''- Ingrédient principal (quantité adaptée)
+- Légumes de saison
+- Féculents ou céréales
+- Matière grasse saine
+- Aromates et épices''';
+    }
+  }
+
+  String _getInstructionsForMeal(String mealName) {
+    final lowerName = mealName.toLowerCase();
+
+    if (lowerName.contains('porridge')) {
+      return '''1. Dans une casserole, faire chauffer le lait à feu moyen
+2. Ajouter les flocons d'avoine et mélanger
+3. Cuire 5-7 minutes en remuant régulièrement
+4. Couper la banane en rondelles
+5. Servir le porridge dans des bols
+6. Garnir avec la banane, les myrtilles et les amandes
+7. Arroser de miel et saupoudrer de cannelle''';
+    } else if (lowerName.contains('salade') && lowerName.contains('poulet')) {
+      return '''1. Faire cuire le quinoa selon les instructions (15 min)
+2. Assaisonner et griller les blancs de poulet (12-15 min)
+3. Laver et couper tous les légumes
+4. Couper l'avocat en tranches
+5. Laisser refroidir le poulet et le couper en lamelles
+6. Dans un grand saladier, mélanger la salade, les légumes et le quinoa
+7. Ajouter le poulet et l'avocat
+8. Préparer la vinaigrette avec l'huile, le citron, sel et poivre
+9. Assaisonner et mélanger délicatement''';
+    } else if (lowerName.contains('saumon')) {
+      return '''1. Préchauffer le four à 200°C
+2. Laver et couper le brocoli en bouquets
+3. Éplucher et couper les patates douces en cubes
+4. Disposer les légumes sur une plaque, arroser d'huile
+5. Enfourner 15 minutes
+6. Assaisonner les filets de saumon
+7. Ajouter le saumon sur la plaque
+8. Poursuivre la cuisson 12-15 minutes
+9. Servir chaud avec l'ail émincé et les herbes''';
+    } else {
+      return '''1. Préparer tous les ingrédients
+2. Cuire l'ingrédient principal
+3. Préparer les accompagnements
+4. Assaisonner selon le goût
+5. Dresser harmonieusement
+6. Servir immédiatement''';
+    }
+  }
+
+  void _showRecipeDialog(MealSuggestion meal) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: FreshTheme.primaryMint,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.restaurant_menu,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            meal.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      meal.description,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Recipe content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: SelectableText(
+                    meal.recipe ?? 'Aucune recette disponible',
+                    style: const TextStyle(fontSize: 14, height: 1.5),
+                  ),
+                ),
+              ),
+
+              // Actions
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.copy, size: 18),
+                      onPressed: () {
+                        // Copier la recette dans le presse-papier
+                        Clipboard.setData(
+                          ClipboardData(text: '${meal.name}\n\n${meal.recipe}'),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Recette copiée !'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      label: const Text('Copier'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FreshTheme.primaryMint,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Fermer'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum PlanType { daily, weekly }
+
+class MealSuggestion {
+  final String mealType;
+  final String name;
+  final String description;
+  final int calories;
+  final int protein;
+  final int carbs;
+  final int fat;
+  final int? cookingTime;
+  String? recipe; // Ajout pour stocker la recette
+
+  MealSuggestion({
+    required this.mealType,
+    required this.name,
+    required this.description,
+    required this.calories,
+    required this.protein,
+    required this.carbs,
+    required this.fat,
+    this.cookingTime,
+    this.recipe,
+  });
+
+  factory MealSuggestion.fromJson(Map<String, dynamic> json) {
+    return MealSuggestion(
+      mealType: json['mealType'] ?? 'Repas',
+      name: json['name'] ?? 'Sans nom',
+      description: json['description'] ?? '',
+      calories: (json['calories'] ?? 0) is int
+          ? json['calories']
+          : (json['calories'] ?? 0).toInt(),
+      protein: (json['protein'] ?? 0) is int
+          ? json['protein']
+          : (json['protein'] ?? 0).toInt(),
+      carbs: (json['carbs'] ?? 0) is int
+          ? json['carbs']
+          : (json['carbs'] ?? 0).toInt(),
+      fat: (json['fat'] ?? 0) is int ? json['fat'] : (json['fat'] ?? 0).toInt(),
+      cookingTime: json['cookingTime'] != null
+          ? (json['cookingTime'] is int
+              ? json['cookingTime']
+              : (json['cookingTime']).toInt())
+          : null,
+      recipe: json['recipe'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'mealType': mealType,
+      'name': name,
+      'description': description,
+      'calories': calories,
+      'protein': protein,
+      'carbs': carbs,
+      'fat': fat,
+      'cookingTime': cookingTime,
+      'recipe': recipe,
+    };
+  }
+}
+
+class MealTotals {
+  final int calories;
+  final int protein;
+  final int carbs;
+  final int fat;
+
+  MealTotals({
+    required this.calories,
+    required this.protein,
+    required this.carbs,
+    required this.fat,
+  });
+}

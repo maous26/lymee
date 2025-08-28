@@ -1,85 +1,70 @@
 // lib/presentation/widgets/empty_results.dart
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 
 class EmptyResults extends StatelessWidget {
   final String message;
   final String? submessage;
-  final String? lottieAsset;
-  final IconData? icon;
-  final Color? color;
-  final VoidCallback? onActionPressed;
+  final IconData icon;
+  final Color color;
   final String? actionLabel;
+  final VoidCallback? onActionPressed;
 
   const EmptyResults({
     Key? key,
     required this.message,
     this.submessage,
-    this.lottieAsset,
-    this.icon,
-    this.color,
-    this.onActionPressed,
+    this.icon = Icons.search_off,
+    this.color = FreshTheme.primaryMint,
     this.actionLabel,
+    this.onActionPressed,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-    final iconColor = color ?? PremiumTheme.primaryColor;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (lottieAsset != null)
-              Lottie.asset(lottieAsset!, width: 200, height: 200, repeat: true)
-            else if (icon != null)
-              Icon(icon, size: 80, color: iconColor.withOpacity(0.7)),
-
-            const SizedBox(height: 24),
-
+            CircleAvatar(
+              radius: 36,
+              backgroundColor: color.withOpacity(0.1),
+              child: Icon(icon, color: color, size: 36),
+            ),
+            const SizedBox(height: 16),
             Text(
               message,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface.withOpacity(0.8),
-              ),
               textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: FreshTheme.midnightGray,
+              ),
             ),
-
-            if (submessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  submessage!,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  textAlign: TextAlign.center,
+            if (submessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                submessage!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: FreshTheme.stormGray,
                 ),
               ),
-
-            if (onActionPressed != null && actionLabel != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 24),
-                child: ElevatedButton(
-                  onPressed: onActionPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: iconColor,
-                    foregroundColor: Colors.white,
-                    elevation: 2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: Text(actionLabel!),
+            ],
+            if (actionLabel != null && onActionPressed != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: onActionPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.white,
                 ),
+                child: Text(actionLabel!),
               ),
+            ],
           ],
         ),
       ),

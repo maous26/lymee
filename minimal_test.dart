@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_bloc.dart';
 
 void main() {
-  runApp(TestApp());
+  runApp(const TestApp());
 }
 
 class TestApp extends StatelessWidget {
@@ -14,7 +14,7 @@ class TestApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Reference the class to ensure import is used
-    final blocType = FoodDetailBloc;
+    const blocType = FoodDetailBloc;
     return MaterialApp(
       home: Scaffold(
         body: Text('FoodDetailBloc type test: $blocType'),

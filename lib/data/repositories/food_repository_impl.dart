@@ -96,6 +96,29 @@ class FoodRepositoryImpl implements FoodRepository {
         results.addAll(processedResults);
         print('  🏭 Processed products found: ${processedResults.length}');
       }
+      // IMPORTANT: If no basic products found OR if it's a brand name, also search processed foods
+      else if (freshResults.isEmpty || _isBrandName(query)) {
+        if (_isBrandName(query)) {
+          print(
+              '  🏷️ Brand name detected - searching processed foods for "$query"');
+          // When query is a brand name, search both ways:
+          // 1. Query as product name, brand as brand parameter
+          final processedResults1 =
+              await _searchProcessedProducts(query, brand);
+          // 2. Query as brand parameter, empty product search
+          final processedResults2 = await _searchProcessedProducts('', query);
+          results.addAll(processedResults1);
+          results.addAll(processedResults2);
+          print(
+              '  🏭 Processed products found: ${processedResults1.length + processedResults2.length}');
+        } else {
+          print(
+              '  🏷️ No basic products found - searching processed foods for brands/products');
+          final processedResults = await _searchProcessedProducts(query, brand);
+          results.addAll(processedResults);
+          print('  🏭 Processed products found: ${processedResults.length}');
+        }
+      }
     } else {
       // Multi-word search - look for specific combinations
       print('  🍕 Multi-word search - looking for specific combinations');
@@ -148,6 +171,66 @@ class FoodRepositoryImpl implements FoodRepository {
 
     return generalTerms.any((term) =>
         normalizedQuery.contains(term) || term.contains(normalizedQuery));
+  }
+
+  /// Check if a term is a brand name
+  bool _isBrandName(String query) {
+    final brandNames = [
+      'nestlé',
+      'nestle',
+      'danone',
+      'coca',
+      'coca-cola',
+      'ferrero',
+      'nutella',
+      'lu',
+      'president',
+      'président',
+      'lindt',
+      'evian',
+      'carrefour',
+      'lidl',
+      'auchan',
+      'kellogg',
+      'kelloggs',
+      'mcdonald',
+      'mcdonalds',
+      'pringles',
+      'haribo',
+      'yoplait',
+      'activia',
+      'actimel',
+      'buitoni',
+      'maggi',
+      'knorr',
+      'lipton',
+      'nescafé',
+      'nescafe',
+      'ricore',
+      'banania',
+      'bonne-maman',
+      'bonne maman',
+      'philadelphia',
+      'babybel',
+      'caprice',
+      'vache-qui-rit',
+      'vache qui rit',
+      'orangina',
+      'perrier',
+      'vittel',
+      'contrex',
+      'hépar',
+      'hepar',
+      'badoit',
+      'san pellegrino',
+      'san-pellegrino'
+    ];
+
+    final String normalizedQuery = query.toLowerCase().trim();
+    return brandNames.any((brand) =>
+        normalizedQuery == brand ||
+        normalizedQuery.contains(brand) ||
+        brand.contains(normalizedQuery));
   }
 
   /// Check if a food item is a basic/raw product (for single word searches)
@@ -298,7 +381,7 @@ class FoodRepositoryImpl implements FoodRepository {
 
     if (query.isEmpty && brand == null) {
       print('  ⚠️ Empty query and no brand, returning empty list');
-      return Right([]);
+      return const Right([]);
     }
 
     try {
@@ -397,7 +480,7 @@ class FoodRepositoryImpl implements FoodRepository {
             await openFoodFactsLocalDataSource.cacheFood(food);
             return Right(food);
           } else {
-            return Left(CacheFailure(
+            return const Left(CacheFailure(
                 'Produit non trouvé en cache et pas de connexion internet'));
           }
         }

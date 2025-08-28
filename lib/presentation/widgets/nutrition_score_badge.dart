@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 
 // Modern, health-focused, and memorable Nutrition Score Badge
 class NutritionScoreBadge extends StatefulWidget {
@@ -47,10 +47,10 @@ class _NutritionScoreBadgeState extends State<NutritionScoreBadge>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = PremiumTheme.getNutritionScoreColor(widget.score);
-    final label = PremiumTheme.getNutritionScoreLabel(widget.score);
+    final color = FreshTheme.getNutritionScoreColor(widget.score);
+    final label = FreshTheme.getNutritionScoreLabel(widget.score);
     final scoreText = widget.score.toStringAsFixed(1);
-    final badgeIcon = Icons.eco_rounded; // Health/eco icon
+    const badgeIcon = Icons.eco_rounded; // Health/eco icon
 
     return Semantics(
       label: 'Score nutritionnel: $scoreText, $label',
@@ -111,7 +111,12 @@ class _NutritionScoreBadgeState extends State<NutritionScoreBadge>
                               blurRadius: 18,
                               spreadRadius: 2,
                             ),
-                            ...PremiumTheme.shadowSmall,
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              spreadRadius: 0,
+                              offset: const Offset(0, 2),
+                            ),
                           ],
                         ),
                         child: Stack(

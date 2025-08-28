@@ -1,6 +1,5 @@
 // lib/presentation/widgets/animated_list_item.dart
 import 'package:flutter/material.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 
 class AnimatedListItem extends StatefulWidget {
   final Widget child;
@@ -24,7 +23,8 @@ class AnimatedListItem extends StatefulWidget {
   State<AnimatedListItem> createState() => _AnimatedListItemState();
 }
 
-class _AnimatedListItemState extends State<AnimatedListItem> with SingleTickerProviderStateMixin {
+class _AnimatedListItemState extends State<AnimatedListItem>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _offsetAnimation;
   late Animation<double> _opacityAnimation;
@@ -34,7 +34,7 @@ class _AnimatedListItemState extends State<AnimatedListItem> with SingleTickerPr
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: widget.duration ?? PremiumTheme.animationMedium,
+      duration: widget.duration ?? const Duration(milliseconds: 260),
     );
 
     _offsetAnimation = Tween<double>(

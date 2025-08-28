@@ -5,7 +5,7 @@ import 'package:lym_nutrition/domain/entities/food_item.dart';
 import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_bloc.dart';
 import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_event.dart';
 import 'package:lym_nutrition/presentation/bloc/food_detail/food_detail_state.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/nutrition_score_badge.dart';
 import 'package:lym_nutrition/presentation/widgets/meal_selection_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -87,11 +87,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Détails de l\'aliment'),
-        backgroundColor: PremiumTheme.primaryColor,
+        backgroundColor: FreshTheme.primaryMint,
       ),
       body: const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(PremiumTheme.primaryColor),
+          valueColor: AlwaysStoppedAnimation<Color>(FreshTheme.primaryMint),
         ),
       ),
     );
@@ -101,7 +101,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Erreur'),
-        backgroundColor: PremiumTheme.error,
+        backgroundColor: FreshTheme.accentCoral,
       ),
       body: Center(
         child: Padding(
@@ -110,7 +110,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.error_outline,
-                  size: 80, color: PremiumTheme.error),
+                  size: 80, color: FreshTheme.accentCoral),
               const SizedBox(height: 24),
               Text(
                 'Une erreur est survenue',
@@ -136,7 +136,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                       );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PremiumTheme.primaryColor,
+                  backgroundColor: FreshTheme.primaryMint,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -156,8 +156,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final sourceColor = food.source == 'ciqual'
-        ? PremiumTheme.primaryColor
-        : PremiumTheme.secondaryColor;
+        ? FreshTheme.primaryMint
+        : FreshTheme.accentCoral;
 
     return Scaffold(
       body: NestedScrollView(
@@ -172,7 +172,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
               flexibleSpace: FlexibleSpaceBar(
                 title: AnimatedOpacity(
                   opacity: _showTitle ? 1.0 : 0.0,
-                  duration: PremiumTheme.animationFast,
+                  duration: const Duration(milliseconds: 200),
                   child: Text(
                     food.name,
                     style: const TextStyle(
@@ -231,7 +231,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                   content: Text(
                     '${food.name} ajouté à $meal (${quantity.toStringAsFixed(0)} $unit)',
                   ),
-                  backgroundColor: PremiumTheme.success,
+                  backgroundColor: FreshTheme.sunGold,
                   duration: const Duration(seconds: 3),
                   action: SnackBarAction(
                     label: 'D\'accord',
@@ -394,8 +394,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(PremiumTheme.borderRadiusLarge),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -404,9 +403,9 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.info_outline,
-                        color: PremiumTheme.primaryColor,
+                        color: FreshTheme.primaryMint,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -440,8 +439,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(PremiumTheme.borderRadiusLarge),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -450,8 +448,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.stars,
-                          color: PremiumTheme.primaryColor, size: 20),
+                      const Icon(Icons.stars,
+                          color: FreshTheme.sunGold, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Score nutritionnel',
@@ -465,7 +463,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                   Row(
                     children: [
                       NutritionScoreBadge(
-                        score: food.nutritionScore,
+                        score: (food.nutritionScore ?? 0).toDouble(),
                         size: 60,
                         showLabel: false,
                       ),
@@ -475,12 +473,12 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              PremiumTheme.getNutritionScoreLabel(
-                                  food.nutritionScore),
+                              FreshTheme.getNutritionScoreLabel(
+                                  (food.nutritionScore ?? 0).toDouble()),
                               style: textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: PremiumTheme.getNutritionScoreColor(
-                                    food.nutritionScore),
+                                color: FreshTheme.getNutritionScoreColor(
+                                    (food.nutritionScore ?? 0).toDouble()),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -528,8 +526,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(PremiumTheme.borderRadiusLarge),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -538,8 +535,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.pie_chart,
-                          color: PremiumTheme.primaryColor, size: 20),
+                      const Icon(Icons.pie_chart,
+                          color: FreshTheme.primaryMint, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Macronutriments',

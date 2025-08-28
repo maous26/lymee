@@ -2,11 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lym_nutrition/domain/entities/food_item.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 
 class MealSelectionDialog extends StatefulWidget {
   final FoodItem food;
-  
+
   const MealSelectionDialog({
     Key? key,
     required this.food,
@@ -20,7 +20,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
   String _selectedMeal = 'Déjeuner';
   double _quantity = 100.0;
   String _selectedUnit = 'g';
-  
+
   final List<String> _meals = [
     'Petit-déjeuner',
     'Collation matin',
@@ -29,7 +29,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
     'Dîner',
     'En-cas'
   ];
-  
+
   final List<String> _units = [
     'g',
     'ml',
@@ -42,20 +42,20 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
   ];
 
   final TextEditingController _quantityController = TextEditingController();
-  
+
   @override
   void initState() {
     super.initState();
     _quantityController.text = _quantity.toString();
     _quantityController.addListener(_updateQuantity);
   }
-  
+
   @override
   void dispose() {
     _quantityController.dispose();
     super.dispose();
   }
-  
+
   void _updateQuantity() {
     final value = double.tryParse(_quantityController.text);
     if (value != null && value > 0) {
@@ -64,14 +64,14 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusLarge),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -84,22 +84,22 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
               'Ajouter à un repas',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: PremiumTheme.primaryColor,
+                color: FreshTheme.primaryMint,
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Nom de l'aliment
             Text(
               widget.food.name,
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Sélection du repas
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +116,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                     border: Border.all(
                       color: theme.colorScheme.onSurface.withOpacity(0.2),
                     ),
-                    borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -124,7 +124,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                       isExpanded: true,
                       icon: const Icon(Icons.arrow_drop_down),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+                      borderRadius: BorderRadius.circular(12),
                       onChanged: (String? newValue) {
                         if (newValue != null) {
                           setState(() {
@@ -132,7 +132,8 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                           });
                         }
                       },
-                      items: _meals.map<DropdownMenuItem<String>>((String value) {
+                      items:
+                          _meals.map<DropdownMenuItem<String>>((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
@@ -143,9 +144,9 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Quantité et unité
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,26 +166,30 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: _quantityController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d*')),
                         ],
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: theme.colorScheme.onSurface.withOpacity(0.2),
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.2),
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 12),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Unité
                 Expanded(
                   flex: 3,
@@ -203,7 +208,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                           border: Border.all(
                             color: theme.colorScheme.onSurface.withOpacity(0.2),
                           ),
-                          borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
@@ -211,7 +216,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                             isExpanded: true,
                             icon: const Icon(Icons.arrow_drop_down),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                            borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+                            borderRadius: BorderRadius.circular(12),
                             onChanged: (String? newValue) {
                               if (newValue != null) {
                                 setState(() {
@@ -219,7 +224,8 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                                 });
                               }
                             },
-                            items: _units.map<DropdownMenuItem<String>>((String value) {
+                            items: _units
+                                .map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value),
@@ -233,15 +239,15 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Résumé nutritionnel
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PremiumTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+                color: FreshTheme.primaryMint.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
@@ -255,18 +261,22 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildNutrientInfo('Calories', _calculateNutrient(widget.food.calories), 'kcal'),
-                      _buildNutrientInfo('Protéines', _calculateNutrient(widget.food.proteins), 'g'),
-                      _buildNutrientInfo('Glucides', _calculateNutrient(widget.food.carbs), 'g'),
-                      _buildNutrientInfo('Lipides', _calculateNutrient(widget.food.fats), 'g'),
+                      _buildNutrientInfo('Calories',
+                          _calculateNutrient(widget.food.calories), 'kcal'),
+                      _buildNutrientInfo('Protéines',
+                          _calculateNutrient(widget.food.proteins), 'g'),
+                      _buildNutrientInfo('Glucides',
+                          _calculateNutrient(widget.food.carbs), 'g'),
+                      _buildNutrientInfo(
+                          'Lipides', _calculateNutrient(widget.food.fats), 'g'),
                     ],
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Boutons d'action
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -287,7 +297,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PremiumTheme.primaryColor,
+                    backgroundColor: FreshTheme.primaryMint,
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('Ajouter'),
@@ -299,13 +309,13 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
       ),
     );
   }
-  
+
   Widget _buildNutrientInfo(String label, double value, String unit) {
     return Column(
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
             color: Colors.black87,
           ),
@@ -320,7 +330,7 @@ class _MealSelectionDialogState extends State<MealSelectionDialog> {
       ],
     );
   }
-  
+
   double _calculateNutrient(double value) {
     // Calculer la valeur nutritionnelle en fonction de la quantité sélectionnée
     // Les valeurs de base sont pour 100g

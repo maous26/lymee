@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lym_nutrition/domain/entities/food_item.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 import 'package:lym_nutrition/presentation/widgets/nutrition_score_badge.dart';
 
 class FoodCard extends StatelessWidget {
@@ -29,16 +29,16 @@ class FoodCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    
+
     // Couleur de badge source pour différencier les aliments
     final Color sourceColor = food.source == 'ciqual'
-        ? PremiumTheme.primaryColor
-        : PremiumTheme.secondaryColor;
+        ? FreshTheme.primaryMint
+        : FreshTheme.accentCoral;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusLarge),
+        borderRadius: BorderRadius.circular(16),
       ),
       elevation: 2,
       shadowColor: Colors.black.withOpacity(0.1),
@@ -53,9 +53,9 @@ class FoodCard extends StatelessWidget {
             children: [
               // Image de l'aliment ou placeholder
               _buildFoodImage(context, sourceColor),
-              
+
               const SizedBox(width: 12),
-              
+
               // Informations sur l'aliment
               Expanded(
                 child: Column(
@@ -71,9 +71,9 @@ class FoodCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 4),
-                    
+
                     // Catégorie et Marque (si disponible)
                     if (showCategory || (showBrand && food.brand != null))
                       Padding(
@@ -85,18 +85,22 @@ class FoodCard extends StatelessWidget {
                                 child: Text(
                                   food.category,
                                   style: textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            if (showBrand && food.brand != null && food.brand!.isNotEmpty)
+                            if (showBrand &&
+                                food.brand != null &&
+                                food.brand!.isNotEmpty)
                               Expanded(
                                 child: Text(
                                   food.brand!,
                                   style: textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
                                     fontWeight: FontWeight.w500,
                                   ),
                                   textAlign: TextAlign.end,
@@ -107,7 +111,7 @@ class FoodCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                    
+
                     // Affichage des calories (sans le badge source)
                     if (showCalories)
                       Text(
@@ -120,7 +124,7 @@ class FoodCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Score nutritionnel
               if (showNutritionScore)
                 Padding(
@@ -131,7 +135,7 @@ class FoodCard extends StatelessWidget {
                     showLabel: false,
                   ),
                 ),
-              
+
               // Indicateur historique
               if (isHistoryItem)
                 Padding(
@@ -157,7 +161,7 @@ class FoodCard extends StatelessWidget {
         height: 60,
         decoration: BoxDecoration(
           color: sourceColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: sourceColor.withOpacity(0.3),
             width: 1,
@@ -170,10 +174,10 @@ class FoodCard extends StatelessWidget {
         ),
       );
     }
-    
+
     // Sinon, afficher l'image mise en cache
     return ClipRRect(
-      borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+      borderRadius: BorderRadius.circular(12),
       child: CachedNetworkImage(
         imageUrl: food.imageUrl,
         width: 60,

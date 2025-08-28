@@ -84,7 +84,7 @@ class FoodRepositoryImpl implements FoodRepository {
     String? brand,
   }) async {
     if (query.isEmpty && brand == null) {
-      return Right([]);
+      return const Right([]);
     }
 
     try {
@@ -169,7 +169,7 @@ class FoodRepositoryImpl implements FoodRepository {
             await openFoodFactsLocalDataSource.cacheFood(food);
             return Right(food);
           } else {
-            return Left(
+            return const Left(
               CacheFailure(
                 'Produit non trouvé en cache et pas de connexion internet',
               ),

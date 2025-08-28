@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:lym_nutrition/injection_container.dart' as di;
 import 'package:lym_nutrition/presentation/bloc/food_search/food_search_bloc.dart';
@@ -10,14 +11,26 @@ import 'package:lym_nutrition/presentation/bloc/food_history/food_history_bloc.d
 import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_bloc.dart';
 import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_event.dart';
 import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_state.dart';
+import 'package:lym_nutrition/presentation/bloc/auth/auth_bloc.dart';
 import 'package:lym_nutrition/presentation/screens/onboarding/onboarding_screen.dart';
-import 'package:lym_nutrition/presentation/screens/nutrition_dashboard_screen.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
-import 'package:lym_nutrition/presentation/themes/wellness_theme.dart';
+import 'package:lym_nutrition/presentation/screens/main_app_shell.dart';
+import 'package:lym_nutrition/presentation/screens/scanner_screen.dart';
+import 'package:lym_nutrition/presentation/screens/food_search_screen.dart';
+import 'package:lym_nutrition/presentation/screens/auth/auth_wrapper.dart';
+import 'package:lym_nutrition/presentation/screens/challenge_screen.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 
 void main() async {
   // Assurer que les widgets Flutter sont initialisés
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Charger l'environnement (.env)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {
+    // ignore: avoid_print
+    print(".env non trouvé - utilisation des variables par défaut");
+  }
 
   // Initialiser l'injection de dépendances
   await di.init();
@@ -58,17 +71,25 @@ class MyApp extends StatelessWidget {
         BlocProvider<UserProfileBloc>(
           create: (_) => di.sl<UserProfileBloc>(),
         ),
+        BlocProvider<AuthBloc>(
+          create: (_) => di.sl<AuthBloc>(),
+        ),
       ],
       child: MaterialApp(
         title: 'Lym Nutrition',
         debugShowCheckedModeBanner: false,
-        theme: WellnessTheme.lightTheme,
-        darkTheme: WellnessTheme.lightTheme, // Utiliser le même thème pour l'instant
+        theme: FreshTheme.light(),
         themeMode: ThemeMode.system,
-        home: const SplashScreen(),
+        home: const AuthWrapper(),
         routes: {
           '/onboarding': (context) => const OnboardingScreen(),
-          '/dashboard': (context) => const NutritionDashboardScreen(),
+          '/dashboard': (context) => const MainAppShell(),
+          // Route pratique pour ouvrir directement l'onglet Journal
+          '/journal': (context) => const MainAppShell(initialIndex: 1),
+          '/scanner': (context) => const ScannerScreen(),
+          // Food search screen route used by Journal
+          '/food_search': (context) => const FoodSearchScreen(),
+          '/challenges': (context) => const ChallengeScreen(),
         },
       ),
     );
@@ -122,8 +143,8 @@ class _SplashScreenState extends State<SplashScreen> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                PremiumTheme.primaryDark,
-                PremiumTheme.primaryLight,
+                FreshTheme.primaryMintDark,
+                FreshTheme.primaryMint,
               ],
             ),
           ),
@@ -150,7 +171,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 Text(
                   'Votre coach nutritionnel personnalisé',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 16,
                   ),
                 ),

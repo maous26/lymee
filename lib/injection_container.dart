@@ -28,10 +28,20 @@ import 'domain/usecases/has_user_profile_usecase.dart';
 import 'domain/usecases/save_user_profile_usecase.dart';
 import 'domain/usecases/has_completed_onboarding_usecase.dart';
 import 'domain/usecases/reset_user_profile_usecase.dart';
+import 'domain/usecases/auth/get_current_user_usecase.dart';
+import 'domain/usecases/auth/is_authenticated_usecase.dart';
+import 'domain/usecases/auth/sign_in_usecase.dart';
+import 'domain/usecases/auth/sign_out_usecase.dart';
+import 'domain/usecases/auth/sign_up_usecase.dart';
+import 'domain/usecases/auth/send_password_reset_usecase.dart';
+import 'domain/repositories/auth_repository.dart';
+import 'data/repositories/auth_repository_impl.dart';
+import 'data/datasources/local/auth_local_data_source.dart';
 import 'presentation/bloc/food_search/food_search_bloc.dart';
 import 'presentation/bloc/food_detail/food_detail_bloc.dart';
 import 'presentation/bloc/food_history/food_history_bloc.dart';
 import 'presentation/bloc/user_profile/user_profile_bloc.dart';
+import 'presentation/bloc/auth/auth_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -71,6 +81,19 @@ Future<void> init() async {
     ),
   );
 
+  //! Feature - Authentication
+  sl.registerFactory(
+    () => AuthBloc(
+      getCurrentUser: sl(),
+      isAuthenticated: sl(),
+      signIn: sl(),
+      signUp: sl(),
+      signOut: sl(),
+      sendPasswordReset: sl(),
+      authRepository: sl(),
+    ),
+  );
+
   // Use cases - Food
   sl.registerLazySingleton(() => SearchFoodsUseCase(sl()));
   sl.registerLazySingleton(() => SearchFreshFoodsUseCase(sl()));
@@ -88,6 +111,14 @@ Future<void> init() async {
   sl.registerLazySingleton(() => HasCompletedOnboardingUseCase(sl()));
   sl.registerLazySingleton(() => ResetUserProfileUseCase(sl()));
 
+  // Use cases - Authentication
+  sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
+  sl.registerLazySingleton(() => IsAuthenticatedUseCase(sl()));
+  sl.registerLazySingleton(() => SignInUseCase(sl()));
+  sl.registerLazySingleton(() => SignUpUseCase(sl()));
+  sl.registerLazySingleton(() => SignOutUseCase(sl()));
+  sl.registerLazySingleton(() => SendPasswordResetUseCase(sl()));
+
   // Repository - Food
   sl.registerLazySingleton<FoodRepository>(
     () => FoodRepositoryImpl(
@@ -104,6 +135,14 @@ Future<void> init() async {
   sl.registerLazySingleton<UserProfileRepository>(
     () => UserProfileRepositoryImpl(
       localDataSource: sl(),
+    ),
+  );
+
+  // Repository - Authentication
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(
+      localDataSource: sl(),
+      networkInfo: sl(),
     ),
   );
 
@@ -141,6 +180,13 @@ Future<void> init() async {
   // Data sources - User Profile
   sl.registerLazySingleton<UserProfileDataSource>(
     () => UserProfileDataSourceImpl(
+      sharedPreferences: sl(),
+    ),
+  );
+
+  // Data sources - Authentication
+  sl.registerLazySingleton<AuthLocalDataSource>(
+    () => AuthLocalDataSourceImpl(
       sharedPreferences: sl(),
     ),
   );

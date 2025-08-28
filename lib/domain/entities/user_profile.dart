@@ -15,7 +15,8 @@ enum ActivityLevel {
 enum WeightGoal {
   lose, // Perte de poids
   maintain, // Maintien du poids
-  gain // Prise de poids
+  gain, // Prise de poids
+  healthyEating // Manger sainement (nouveau)
 }
 
 enum IntermittentFastingType {
@@ -26,6 +27,27 @@ enum IntermittentFastingType {
   fasting5_2, // 5 jours normaux, 2 jours à calories réduites
   alternateDay, // Jeûne un jour sur deux
   custom // Paramètres personnalisés
+}
+
+enum CookingLevel {
+  beginner, // Débutant - repas simples, peu d'expérience
+  intermediate, // Intermédiaire - peut suivre des recettes variées
+  advanced, // Avancé - maîtrise les techniques, créatif
+  expert // Expert - chef ou passionné, techniques complexes
+}
+
+enum CookingTime {
+  minimal, // < 15 min par repas
+  short, // 15-30 min par repas
+  moderate, // 30-60 min par repas
+  long // > 60 min par repas
+}
+
+enum FoodBudget {
+  tight, // Budget serré (< 50€/semaine)
+  moderate, // Budget modéré (50-100€/semaine)
+  comfortable, // Budget confortable (100-150€/semaine)
+  generous // Budget généreux (> 150€/semaine)
 }
 
 enum SportIntensity {
@@ -85,6 +107,67 @@ class UserSportActivity {
       intensity: SportIntensity.values[json['intensity']],
       minutesPerSession: json['minutesPerSession'],
       sessionsPerWeek: json['sessionsPerWeek'],
+    );
+  }
+}
+
+class MealPlanningPreferences {
+  final CookingLevel cookingLevel;
+  final CookingTime weekdayCookingTime;
+  final CookingTime weekendCookingTime;
+  final FoodBudget weeklyBudget;
+  final double? specificBudgetAmount; // Optional specific amount in euros
+
+  MealPlanningPreferences({
+    required this.cookingLevel,
+    required this.weekdayCookingTime,
+    required this.weekendCookingTime,
+    required this.weeklyBudget,
+    this.specificBudgetAmount,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'cookingLevel': cookingLevel.index,
+      'weekdayCookingTime': weekdayCookingTime.index,
+      'weekendCookingTime': weekendCookingTime.index,
+      'weeklyBudget': weeklyBudget.index,
+      'specificBudgetAmount': specificBudgetAmount,
+    };
+  }
+
+  factory MealPlanningPreferences.fromJson(Map<String, dynamic> json) {
+    return MealPlanningPreferences(
+      cookingLevel: CookingLevel.values[json['cookingLevel'] ?? 0],
+      weekdayCookingTime: CookingTime.values[json['weekdayCookingTime'] ?? 1],
+      weekendCookingTime: CookingTime.values[json['weekendCookingTime'] ?? 2],
+      weeklyBudget: FoodBudget.values[json['weeklyBudget'] ?? 1],
+      specificBudgetAmount: json['specificBudgetAmount']?.toDouble(),
+    );
+  }
+
+  factory MealPlanningPreferences.defaultPreferences() {
+    return MealPlanningPreferences(
+      cookingLevel: CookingLevel.intermediate,
+      weekdayCookingTime: CookingTime.short,
+      weekendCookingTime: CookingTime.moderate,
+      weeklyBudget: FoodBudget.moderate,
+    );
+  }
+
+  MealPlanningPreferences copyWith({
+    CookingLevel? cookingLevel,
+    CookingTime? weekdayCookingTime,
+    CookingTime? weekendCookingTime,
+    FoodBudget? weeklyBudget,
+    double? specificBudgetAmount,
+  }) {
+    return MealPlanningPreferences(
+      cookingLevel: cookingLevel ?? this.cookingLevel,
+      weekdayCookingTime: weekdayCookingTime ?? this.weekdayCookingTime,
+      weekendCookingTime: weekendCookingTime ?? this.weekendCookingTime,
+      weeklyBudget: weeklyBudget ?? this.weeklyBudget,
+      specificBudgetAmount: specificBudgetAmount ?? this.specificBudgetAmount,
     );
   }
 }
@@ -183,6 +266,24 @@ class IntermittentFastingSchedule {
         );
     }
   }
+
+  IntermittentFastingSchedule copyWith({
+    IntermittentFastingType? type,
+    int? fastingHours,
+    int? eatingHours,
+    List<int>? fastingDays,
+    String? fastingStartTime,
+    String? fastingEndTime,
+  }) {
+    return IntermittentFastingSchedule(
+      type: type ?? this.type,
+      fastingHours: fastingHours ?? this.fastingHours,
+      eatingHours: eatingHours ?? this.eatingHours,
+      fastingDays: fastingDays ?? this.fastingDays,
+      fastingStartTime: fastingStartTime ?? this.fastingStartTime,
+      fastingEndTime: fastingEndTime ?? this.fastingEndTime,
+    );
+  }
 }
 
 class Supplement {
@@ -221,6 +322,45 @@ class Supplement {
   }
 }
 
+// Add this class for calculated needs
+class CalculatedDailyNeeds extends Equatable {
+  final double calories;
+  final double proteinGrams;
+  final double carbsGrams;
+  final double fatGrams;
+  final double fiberGrams;
+
+  const CalculatedDailyNeeds({
+    required this.calories,
+    required this.proteinGrams,
+    required this.carbsGrams,
+    required this.fatGrams,
+    required this.fiberGrams,
+  });
+
+  @override
+  List<Object?> get props =>
+      [calories, proteinGrams, carbsGrams, fatGrams, fiberGrams];
+
+  // Optional: Add toJson and fromJson if you need to serialize this separately
+  Map<String, dynamic> toJson() => {
+        'calories': calories,
+        'proteinGrams': proteinGrams,
+        'carbsGrams': carbsGrams,
+        'fatGrams': fatGrams,
+        'fiberGrams': fiberGrams,
+      };
+
+  factory CalculatedDailyNeeds.fromJson(Map<String, dynamic> json) =>
+      CalculatedDailyNeeds(
+        calories: (json['calories'] as num?)?.toDouble() ?? 0,
+        proteinGrams: (json['proteinGrams'] as num?)?.toDouble() ?? 0,
+        carbsGrams: (json['carbsGrams'] as num?)?.toDouble() ?? 0,
+        fatGrams: (json['fatGrams'] as num?)?.toDouble() ?? 0,
+        fiberGrams: (json['fiberGrams'] as num?)?.toDouble() ?? 0,
+      );
+}
+
 class UserProfile extends Equatable {
   final String userId;
   final String? name;
@@ -235,7 +375,10 @@ class UserProfile extends Equatable {
   final UserDietaryPreferences dietaryPreferences;
   final IntermittentFastingSchedule fastingSchedule;
   final List<Supplement> supplements;
-  final Map<String, double> dailyNutrientGoals; // Nutriments personnalisés
+  final MealPlanningPreferences mealPlanningPreferences;
+  final Map<String, double>
+      dailyNutrientGoals; // Nutriments personnalisés (legacy or specific overrides)
+  final CalculatedDailyNeeds? calculatedDailyNeeds; // New field
 
   // Constructeur
   const UserProfile({
@@ -252,7 +395,9 @@ class UserProfile extends Equatable {
     required this.dietaryPreferences,
     required this.fastingSchedule,
     this.supplements = const [],
+    required this.mealPlanningPreferences,
     this.dailyNutrientGoals = const {},
+    this.calculatedDailyNeeds, // Initialize new field
   });
 
   // Méthode pour calculer les besoins caloriques de base (BMR) avec l'équation de Mifflin-St Jeor
@@ -313,12 +458,14 @@ class UserProfile extends Equatable {
         // Surplus calorique pour gagner du poids
         return tdee + ((weightGoalKgPerWeek * 7700) / 7);
       case WeightGoal.maintain:
+      case WeightGoal.healthyEating:
+        // Pour maintenir le poids ou manger sainement, utiliser le TDEE
         return tdee;
     }
   }
 
-  // Calculer les objectifs de macronutriments
-  Map<String, double> calculateMacroTargets() {
+  // Change return type to CalculatedDailyNeeds
+  CalculatedDailyNeeds calculateMacroTargetsObject() {
     double dailyCalories = calculateDailyCalories();
 
     // Distribution par défaut des macros
@@ -335,6 +482,11 @@ class UserProfile extends Equatable {
       proteinPercentage = 0.25;
       carbPercentage = 0.50;
       fatPercentage = 0.25;
+    } else if (weightGoal == WeightGoal.healthyEating) {
+      // Pour manger sainement, équilibre optimal
+      proteinPercentage = 0.20;
+      carbPercentage = 0.50;
+      fatPercentage = 0.30;
     }
 
     // Calculer les grammes par macro
@@ -348,12 +500,24 @@ class UserProfile extends Equatable {
     // Calculer les fibres (25-30g par jour ou ~14g par 1000 calories)
     double fiberGrams = dailyCalories * 0.014;
 
+    return CalculatedDailyNeeds(
+      calories: dailyCalories,
+      proteinGrams: proteinGrams,
+      carbsGrams: carbGrams,
+      fatGrams: fatGrams,
+      fiberGrams: fiberGrams,
+    );
+  }
+
+  // Keep the old method for compatibility if needed, or remove it
+  Map<String, double> calculateMacroTargets() {
+    final needs = calculateMacroTargetsObject();
     return {
-      'calories': dailyCalories,
-      'protein': proteinGrams,
-      'carbs': carbGrams,
-      'fat': fatGrams,
-      'fiber': fiberGrams,
+      'calories': needs.calories,
+      'protein': needs.proteinGrams,
+      'carbs': needs.carbsGrams,
+      'fat': needs.fatGrams,
+      'fiber': needs.fiberGrams,
     };
   }
 
@@ -447,7 +611,9 @@ class UserProfile extends Equatable {
     UserDietaryPreferences? dietaryPreferences,
     IntermittentFastingSchedule? fastingSchedule,
     List<Supplement>? supplements,
+    MealPlanningPreferences? mealPlanningPreferences,
     Map<String, double>? dailyNutrientGoals,
+    CalculatedDailyNeeds? calculatedDailyNeeds, // Add to copyWith
   }) {
     return UserProfile(
       userId: userId ?? this.userId,
@@ -463,7 +629,11 @@ class UserProfile extends Equatable {
       dietaryPreferences: dietaryPreferences ?? this.dietaryPreferences,
       fastingSchedule: fastingSchedule ?? this.fastingSchedule,
       supplements: supplements ?? this.supplements,
+      mealPlanningPreferences:
+          mealPlanningPreferences ?? this.mealPlanningPreferences,
       dailyNutrientGoals: dailyNutrientGoals ?? this.dailyNutrientGoals,
+      calculatedDailyNeeds:
+          calculatedDailyNeeds ?? this.calculatedDailyNeeds, // Update copyWith
     );
   }
 
@@ -483,9 +653,10 @@ class UserProfile extends Equatable {
       'weightGoalKgPerWeek': weightGoalKgPerWeek,
       'dietaryPreferences': dietaryPreferences.toJson(),
       'fastingSchedule': fastingSchedule.toJson(),
-      'supplements':
-          supplements.map((supplement) => supplement.toJson()).toList(),
+      'supplements': supplements.map((s) => s.toJson()).toList(),
+      'mealPlanningPreferences': mealPlanningPreferences.toJson(),
       'dailyNutrientGoals': dailyNutrientGoals,
+      'calculatedDailyNeeds': calculatedDailyNeeds?.toJson(), // Add to toJson
     };
   }
 
@@ -496,53 +667,34 @@ class UserProfile extends Equatable {
       name: json['name'],
       age: json['age'],
       gender: Gender.values[json['gender']],
-      heightCm: json['heightCm'],
-      weightKg: json['weightKg'],
+      heightCm: (json['heightCm'] as num).toDouble(),
+      weightKg: (json['weightKg'] as num).toDouble(),
       activityLevel: ActivityLevel.values[json['activityLevel']],
-      sportActivities: (json['sportActivities'] as List?)
-              ?.map((activity) => UserSportActivity.fromJson(activity))
-              .toList() ??
-          [],
+      sportActivities: (json['sportActivities'] as List? ?? [])
+          .map((activity) => UserSportActivity.fromJson(activity))
+          .toList(),
       weightGoal: WeightGoal.values[json['weightGoal']],
-      weightGoalKgPerWeek: json['weightGoalKgPerWeek'] ?? 0.5,
+      weightGoalKgPerWeek:
+          (json['weightGoalKgPerWeek'] as num?)?.toDouble() ?? 0.5,
       dietaryPreferences:
           UserDietaryPreferences.fromJson(json['dietaryPreferences']),
-      fastingSchedule: json['fastingSchedule'] != null
-          ? IntermittentFastingSchedule.fromJson(json['fastingSchedule'])
-          : IntermittentFastingSchedule.defaultSchedule(),
-      supplements: (json['supplements'] as List?)
-              ?.map((supplement) => Supplement.fromJson(supplement))
-              .toList() ??
-          [],
+      fastingSchedule:
+          IntermittentFastingSchedule.fromJson(json['fastingSchedule']),
+      supplements: (json['supplements'] as List? ?? [])
+          .map((s) => Supplement.fromJson(s))
+          .toList(),
+      mealPlanningPreferences: json['mealPlanningPreferences'] != null
+          ? MealPlanningPreferences.fromJson(json['mealPlanningPreferences'])
+          : MealPlanningPreferences.defaultPreferences(),
       dailyNutrientGoals:
-          (json['dailyNutrientGoals'] as Map<String, dynamic>?)?.map(
-                (key, value) =>
-                    MapEntry(key, value is int ? value.toDouble() : value),
-              ) ??
-              {},
+          Map<String, double>.from(json['dailyNutrientGoals'] ?? {}),
+      calculatedDailyNeeds: json['calculatedDailyNeeds'] != null
+          ? CalculatedDailyNeeds.fromJson(json['calculatedDailyNeeds'])
+          : null, // Add to fromJson
     );
   }
 
-  // Créer un profil par défaut
-  factory UserProfile.defaultProfile(String userId) {
-    return UserProfile(
-      userId: userId,
-      name: null,
-      age: 30,
-      gender: Gender.male,
-      heightCm: 175,
-      weightKg: 70,
-      activityLevel: ActivityLevel.moderatelyActive,
-      sportActivities: [],
-      weightGoal: WeightGoal.maintain,
-      weightGoalKgPerWeek: 0.5,
-      dietaryPreferences: UserDietaryPreferences(),
-      fastingSchedule: IntermittentFastingSchedule.defaultSchedule(),
-      supplements: [],
-      dailyNutrientGoals: {},
-    );
-  }
-
+  // Props pour Equatable
   @override
   List<Object?> get props => [
         userId,
@@ -558,6 +710,32 @@ class UserProfile extends Equatable {
         dietaryPreferences,
         fastingSchedule,
         supplements,
+        mealPlanningPreferences,
         dailyNutrientGoals,
+        calculatedDailyNeeds, // Add to props
       ];
+
+  // Méthode statique pour un profil utilisateur initial ou par défaut
+  static UserProfile empty(String userId) {
+    return UserProfile(
+      userId: userId,
+      age: 30,
+      gender: Gender.other,
+      heightCm: 170,
+      weightKg: 70,
+      activityLevel: ActivityLevel.moderatelyActive,
+      weightGoal: WeightGoal.maintain,
+      dietaryPreferences: UserDietaryPreferences(), // Changed this line
+      fastingSchedule: IntermittentFastingSchedule.defaultSchedule(),
+      mealPlanningPreferences: MealPlanningPreferences.defaultPreferences(),
+      // Initialize calculatedDailyNeeds, perhaps by calculating it here or leaving it null
+      // For example, to calculate it:
+      // calculatedDailyNeeds: UserProfile(...).calculateMacroTargetsObject(), // This would require a temporary UserProfile instance
+    );
+  }
+
+  // Helper to update profile with calculated needs
+  UserProfile withCalculatedNeeds() {
+    return copyWith(calculatedDailyNeeds: calculateMacroTargetsObject());
+  }
 }

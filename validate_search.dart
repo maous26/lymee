@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+// ignore_for_file: avoid_print
 // Validation script for unified search functionality
 
 import 'package:lym_nutrition/injection_container.dart' as di;
@@ -29,7 +30,7 @@ Future<void> main() async {
           }
         }
       });
-      print('${'=' * 50}');
+      print('=' * 50);
     }
 
     print('\n🎉 Validation completed!');

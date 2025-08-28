@@ -1,0 +1,543 @@
+// lib/presentation/widgets/unified_components.dart
+import 'package:flutter/material.dart';
+import 'package:lym_nutrition/presentation/themes/unified_theme.dart';
+
+/// Marketing-friendly Card Component
+class MarketingCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final double? elevation;
+  final Color? backgroundColor;
+  final BorderRadius? borderRadius;
+  final List<BoxShadow>? boxShadow;
+  final Gradient? gradient;
+
+  const MarketingCard({
+    Key? key,
+    required this.child,
+    this.padding,
+    this.elevation,
+    this.backgroundColor,
+    this.borderRadius,
+    this.boxShadow,
+    this.gradient,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: gradient == null
+            ? (backgroundColor ?? UnifiedTheme.neutralWhite)
+            : null,
+        gradient: gradient,
+        borderRadius:
+            borderRadius ?? BorderRadius.circular(UnifiedTheme.radiusL),
+        boxShadow: boxShadow ?? UnifiedTheme.shadowMedium,
+      ),
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(UnifiedTheme.spacingL),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Professional Section Header
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final IconData? icon;
+  final Color? iconColor;
+  final Widget? trailing;
+
+  const SectionHeader({
+    Key? key,
+    required this.title,
+    this.subtitle,
+    this.icon,
+    this.iconColor,
+    this.trailing,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (icon != null) ...[
+          Icon(
+            icon,
+            color: iconColor ?? UnifiedTheme.primaryTeal,
+            size: 24,
+          ),
+          const SizedBox(width: UnifiedTheme.spacingM),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: UnifiedTheme.textTheme.headlineMedium?.copyWith(
+                  color: UnifiedTheme.neutralGray800,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: UnifiedTheme.textTheme.bodyMedium?.copyWith(
+                    color: UnifiedTheme.neutralGray600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (trailing != null) trailing!,
+      ],
+    );
+  }
+}
+
+/// Stat Card for displaying metrics
+class StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? unit;
+  final IconData? icon;
+  final Color? color;
+  final double? progress;
+  final bool showProgress;
+
+  const StatCard({
+    Key? key,
+    required this.label,
+    required this.value,
+    this.unit,
+    this.icon,
+    this.color,
+    this.progress,
+    this.showProgress = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = color ?? UnifiedTheme.primaryTeal;
+
+    return MarketingCard(
+      backgroundColor: effectiveColor.withOpacity(0.05),
+      padding: const EdgeInsets.all(UnifiedTheme.spacingM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: effectiveColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: effectiveColor,
+                size: 20,
+              ),
+            ),
+          if (icon != null) const SizedBox(height: UnifiedTheme.spacingS),
+          Text(
+            label,
+            style: UnifiedTheme.textTheme.bodySmall?.copyWith(
+              color: UnifiedTheme.neutralGray600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: UnifiedTheme.textTheme.headlineMedium?.copyWith(
+                  color: effectiveColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (unit != null) ...[
+                const SizedBox(width: 2),
+                Text(
+                  unit!,
+                  style: UnifiedTheme.textTheme.bodySmall?.copyWith(
+                    color: UnifiedTheme.neutralGray600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (showProgress && progress != null) ...[
+            const SizedBox(height: UnifiedTheme.spacingS),
+            LinearProgressIndicator(
+              value: progress!.clamp(0.0, 1.0),
+              backgroundColor: UnifiedTheme.neutralGray200,
+              valueColor: AlwaysStoppedAnimation<Color>(effectiveColor),
+              minHeight: 4,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Professional Tab Bar
+class ProfessionalTabBar extends StatelessWidget {
+  final TabController controller;
+  final List<String> tabs;
+  final Color? backgroundColor;
+  final Color? indicatorColor;
+
+  const ProfessionalTabBar({
+    Key? key,
+    required this.controller,
+    required this.tabs,
+    this.backgroundColor,
+    this.indicatorColor,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor ?? UnifiedTheme.primaryTeal,
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(UnifiedTheme.radiusL)),
+      ),
+      child: TabBar(
+        controller: controller,
+        indicatorColor: indicatorColor ?? UnifiedTheme.neutralWhite,
+        labelColor: UnifiedTheme.neutralWhite,
+        unselectedLabelColor: UnifiedTheme.neutralWhite.withOpacity(0.7),
+        labelStyle: UnifiedTheme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: UnifiedTheme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
+        tabs: tabs.map((tab) => Tab(text: tab)).toList(),
+      ),
+    );
+  }
+}
+
+/// Action Button with consistent styling
+class ActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+  final IconData? icon;
+  final bool isPrimary;
+  final bool isLoading;
+  final double? width;
+
+  const ActionButton({
+    Key? key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.isPrimary = true,
+    this.isLoading = false,
+    this.width,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    Widget button;
+
+    if (isPrimary) {
+      button = ElevatedButton.icon(
+        onPressed: isLoading ? null : onPressed,
+        icon: isLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(UnifiedTheme.neutralWhite),
+                ),
+              )
+            : (icon != null ? Icon(icon, size: 18) : const SizedBox()),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: UnifiedTheme.primaryTeal,
+          foregroundColor: UnifiedTheme.neutralWhite,
+          minimumSize: Size(width ?? 0, 48),
+        ),
+      );
+    } else {
+      button = OutlinedButton.icon(
+        onPressed: isLoading ? null : onPressed,
+        icon: isLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(UnifiedTheme.primaryTeal),
+                ),
+              )
+            : (icon != null ? Icon(icon, size: 18) : const SizedBox()),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: UnifiedTheme.primaryTeal,
+          side: const BorderSide(color: UnifiedTheme.primaryTeal),
+          minimumSize: Size(width ?? 0, 48),
+        ),
+      );
+    }
+
+    return button;
+  }
+}
+
+/// Info Box for highlighting important information
+class InfoBox extends StatelessWidget {
+  final String title;
+  final String content;
+  final InfoBoxType type;
+  final IconData? customIcon;
+
+  const InfoBox({
+    Key? key,
+    required this.title,
+    required this.content,
+    this.type = InfoBoxType.info,
+    this.customIcon,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    Color backgroundColor;
+    Color borderColor;
+    Color iconColor;
+    IconData icon;
+
+    switch (type) {
+      case InfoBoxType.success:
+        backgroundColor = UnifiedTheme.successColor.withOpacity(0.1);
+        borderColor = UnifiedTheme.successColor;
+        iconColor = UnifiedTheme.successColor;
+        icon = Icons.check_circle_outline;
+        break;
+      case InfoBoxType.warning:
+        backgroundColor = UnifiedTheme.warningColor.withOpacity(0.1);
+        borderColor = UnifiedTheme.warningColor;
+        iconColor = UnifiedTheme.warningColor;
+        icon = Icons.warning_amber_outlined;
+        break;
+      case InfoBoxType.error:
+        backgroundColor = UnifiedTheme.errorColor.withOpacity(0.1);
+        borderColor = UnifiedTheme.errorColor;
+        iconColor = UnifiedTheme.errorColor;
+        icon = Icons.error_outline;
+        break;
+      case InfoBoxType.info:
+      default:
+        backgroundColor = UnifiedTheme.infoColor.withOpacity(0.1);
+        borderColor = UnifiedTheme.infoColor;
+        iconColor = UnifiedTheme.infoColor;
+        icon = Icons.info_outline;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(UnifiedTheme.spacingM),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: Border.all(color: borderColor, width: 1),
+        borderRadius: BorderRadius.circular(UnifiedTheme.radiusM),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            customIcon ?? icon,
+            color: iconColor,
+            size: 20,
+          ),
+          const SizedBox(width: UnifiedTheme.spacingS),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: UnifiedTheme.textTheme.titleSmall?.copyWith(
+                    color: iconColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  content,
+                  style: UnifiedTheme.textTheme.bodySmall?.copyWith(
+                    color: UnifiedTheme.neutralGray700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum InfoBoxType { info, success, warning, error }
+
+/// Professional App Bar with consistent styling
+class ProfessionalAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
+  final String title;
+  final List<Widget>? actions;
+  final Widget? leading;
+  final bool centerTitle;
+  final double elevation;
+  final Color? backgroundColor;
+  final bool automaticallyImplyLeading;
+
+  const ProfessionalAppBar({
+    Key? key,
+    required this.title,
+    this.actions,
+    this.leading,
+    this.centerTitle = true,
+    this.elevation = 0,
+    this.backgroundColor,
+    this.automaticallyImplyLeading = true,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      title: Text(
+        title,
+        style: UnifiedTheme.textTheme.headlineSmall?.copyWith(
+          color: UnifiedTheme.neutralWhite,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      centerTitle: centerTitle,
+      elevation: elevation,
+      backgroundColor: backgroundColor ?? UnifiedTheme.primaryTeal,
+      foregroundColor: UnifiedTheme.neutralWhite,
+      leading: leading,
+      actions: actions,
+      automaticallyImplyLeading: automaticallyImplyLeading,
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+/// Loading State Widget
+class LoadingState extends StatelessWidget {
+  final String? message;
+
+  const LoadingState({Key? key, this.message}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(UnifiedTheme.primaryTeal),
+          ),
+          if (message != null) ...[
+            const SizedBox(height: UnifiedTheme.spacingM),
+            Text(
+              message!,
+              style: UnifiedTheme.textTheme.bodyMedium?.copyWith(
+                color: UnifiedTheme.neutralGray600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Empty State Widget
+class EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const EmptyState({
+    Key? key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(UnifiedTheme.spacingXL),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(UnifiedTheme.spacingL),
+              decoration: BoxDecoration(
+                color: UnifiedTheme.neutralGray100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 48,
+                color: UnifiedTheme.neutralGray400,
+              ),
+            ),
+            const SizedBox(height: UnifiedTheme.spacingL),
+            Text(
+              title,
+              style: UnifiedTheme.textTheme.headlineSmall?.copyWith(
+                color: UnifiedTheme.neutralGray800,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: UnifiedTheme.spacingS),
+            Text(
+              subtitle,
+              style: UnifiedTheme.textTheme.bodyMedium?.copyWith(
+                color: UnifiedTheme.neutralGray600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: UnifiedTheme.spacingL),
+              ActionButton(
+                label: actionLabel!,
+                onPressed: onAction!,
+                icon: Icons.add,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

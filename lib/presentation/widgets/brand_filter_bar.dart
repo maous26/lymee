@@ -1,6 +1,6 @@
 // lib/presentation/widgets/brand_filter_bar.dart
 import 'package:flutter/material.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 
 class BrandFilterBar extends StatefulWidget {
   final TextEditingController controller;
@@ -22,7 +22,8 @@ class BrandFilterBar extends StatefulWidget {
   State<BrandFilterBar> createState() => _BrandFilterBarState();
 }
 
-class _BrandFilterBarState extends State<BrandFilterBar> with SingleTickerProviderStateMixin {
+class _BrandFilterBarState extends State<BrandFilterBar>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _heightAnimation;
   bool _showClearButton = false;
@@ -32,7 +33,7 @@ class _BrandFilterBarState extends State<BrandFilterBar> with SingleTickerProvid
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: PremiumTheme.animationMedium,
+      duration: const Duration(milliseconds: 220),
     );
     _heightAnimation = CurvedAnimation(
       parent: _animationController,
@@ -84,20 +85,26 @@ class _BrandFilterBarState extends State<BrandFilterBar> with SingleTickerProvid
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: PremiumTheme.secondaryColor.withOpacity(0.3),
+            color: FreshTheme.accentCoral.withOpacity(0.3),
             width: 1,
           ),
-          boxShadow: PremiumTheme.shadowSmall,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
+            const Padding(
+              padding: EdgeInsets.only(left: 12),
               child: Icon(
                 Icons.business,
-                color: PremiumTheme.secondaryColor,
+                color: FreshTheme.accentCoral,
                 size: 20,
               ),
             ),
@@ -107,10 +114,10 @@ class _BrandFilterBarState extends State<BrandFilterBar> with SingleTickerProvid
                 focusNode: widget.focusNode,
                 textInputAction: TextInputAction.search,
                 onSubmitted: widget.onBrandFilter,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Filtrer par marque...',
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
@@ -123,7 +130,7 @@ class _BrandFilterBarState extends State<BrandFilterBar> with SingleTickerProvid
               IconButton(
                 icon: const Icon(
                   Icons.clear,
-                  color: PremiumTheme.secondaryColor,
+                  color: FreshTheme.accentCoral,
                   size: 20,
                 ),
                 onPressed: () {

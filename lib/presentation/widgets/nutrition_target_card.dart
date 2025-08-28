@@ -1,7 +1,6 @@
 // lib/presentation/widgets/nutrition_target_card.dart
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 
 class NutritionTargetCard extends StatelessWidget {
   final String label;
@@ -28,7 +27,7 @@ class NutritionTargetCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(PremiumTheme.borderRadiusMedium),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: color.withOpacity(0.3),
           width: 1,
@@ -57,7 +56,7 @@ class NutritionTargetCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${consumed.toStringAsFixed(1)}${unit}',
+            '${consumed.toStringAsFixed(1)}$unit',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -75,7 +74,7 @@ class NutritionTargetCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Objectif: ${target.toStringAsFixed(1)}${unit}',
+            'Objectif: ${target.toStringAsFixed(1)}$unit',
             style: TextStyle(
               fontSize: 10,
               color: Colors.grey[600],
@@ -83,7 +82,7 @@ class NutritionTargetCard extends StatelessWidget {
           ),
           if (remaining > 0)
             Text(
-              'Restant: ${remaining.toStringAsFixed(1)}${unit}',
+              'Restant: ${remaining.toStringAsFixed(1)}$unit',
               style: TextStyle(
                 fontSize: 10,
                 color: Colors.grey[600],

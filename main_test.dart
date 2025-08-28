@@ -11,7 +11,7 @@ import 'package:lym_nutrition/presentation/bloc/food_history/food_history_bloc.d
 
 // Import themes and screens
 import 'package:lym_nutrition/presentation/screens/food_search_screen.dart';
-import 'package:lym_nutrition/presentation/themes/app_theme.dart';
+import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
 
 void main() async {
   // Assurer que les widgets Flutter sont initialisés
@@ -57,8 +57,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Lym Nutrition',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
+        theme: PremiumTheme.lightTheme,
+        darkTheme: PremiumTheme.darkTheme,
         themeMode: ThemeMode.system,
         home: const FoodSearchScreen(),
       ),

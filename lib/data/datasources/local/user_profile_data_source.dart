@@ -49,7 +49,7 @@ class UserProfileDataSourceImpl implements UserProfileDataSource {
       return UserProfile.fromJson(profileJson);
     } catch (e) {
       if (e is CacheException) {
-        throw e;
+        rethrow;
       }
       throw CacheException(
           'Erreur lors de la récupération du profil: ${e.toString()}');
@@ -79,6 +79,7 @@ class UserProfileDataSourceImpl implements UserProfileDataSource {
   }
 
   /// Vérifie si l'utilisateur a terminé l'onboarding
+  @override
   Future<bool> hasCompletedOnboarding() async {
     // TESTING MODE: Always return false to reset onboarding on each app launch
     // This forces the onboarding to restart every time for testing purposes
@@ -90,6 +91,7 @@ class UserProfileDataSourceImpl implements UserProfileDataSource {
   }
 
   /// Réinitialise le profil utilisateur et le statut d'onboarding
+  @override
   Future<bool> resetUserProfile() async {
     try {
       await sharedPreferences.remove(USER_PROFILE_KEY);

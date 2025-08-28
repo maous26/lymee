@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lym_nutrition/presentation/themes/premium_theme.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 
 class AnimatedSearchBar extends StatefulWidget {
   final TextEditingController controller;
@@ -38,7 +38,7 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: PremiumTheme.animationMedium,
+      duration: const Duration(milliseconds: 220),
     );
     _scaleAnimation = CurvedAnimation(
       parent: _animationController,
@@ -77,9 +77,14 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar>
       child: Container(
         decoration: BoxDecoration(
           color: widget.backgroundColor ?? theme.cardTheme.color,
-          borderRadius: widget.borderRadius ??
-              BorderRadius.circular(PremiumTheme.borderRadiusLarge),
-          boxShadow: PremiumTheme.shadowSmall,
+          borderRadius: widget.borderRadius ?? BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: TextField(
           controller: widget.controller,
@@ -89,13 +94,12 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar>
           onSubmitted: (_) => widget.onSearch(),
           decoration: InputDecoration(
             hintText: widget.hintText,
-            prefixIcon:
-                const Icon(Icons.search, color: PremiumTheme.primaryColor),
+            prefixIcon: const Icon(Icons.search, color: FreshTheme.primaryMint),
             suffixIcon: _showClearButton
                 ? IconButton(
                     icon: const Icon(
                       Icons.clear,
-                      color: PremiumTheme.primaryColor,
+                      color: FreshTheme.primaryMint,
                     ),
                     onPressed: () {
                       widget.controller.clear();

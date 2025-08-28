@@ -1,0 +1,2013 @@
+// lib/presentation/screens/home_dashboard_screen.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lym_nutrition/domain/entities/food_item.dart';
+import 'package:lym_nutrition/domain/entities/user_profile.dart';
+import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_bloc.dart';
+import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_event.dart';
+import 'package:lym_nutrition/presentation/bloc/user_profile/user_profile_state.dart';
+import 'package:lym_nutrition/presentation/themes/lym_design_system.dart';
+import 'package:lym_nutrition/presentation/screens/challenge_screen.dart';
+
+/// Dashboard principal de l'application
+/// Écran d'accueil moderne et attrayant avec toutes les informations clés
+class HomeDashboardScreen extends StatefulWidget {
+  const HomeDashboardScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+}
+
+class _HomeDashboardScreenState extends State<HomeDashboardScreen>
+    with SingleTickerProviderStateMixin {
+  late UserProfile _userProfile;
+  late TabController _tabController;
+  bool _isLoading = true;
+  int _selectedDay = DateTime.now().weekday - 1; // 0 = lundi, 6 = dimanche
+
+  // Animation pour les éléments du tableau de bord
+  late AnimationController _animationController;
+  late Animation<double> _fadeInAnimation;
+
+  // Données factices pour la démo
+  final List<String> _weekDays = [
+    'Lun',
+    'Mar',
+    'Mer',
+    'Jeu',
+    'Ven',
+    'Sam',
+    'Dim'
+  ];
+  final Map<String, double> _nutrientProgress = {
+    'Calories': 0.7,
+    'Protéines': 0.85,
+    'Glucides': 0.6,
+    'Lipides': 0.45,
+    'Fibres': 0.3,
+    'Eau': 0.5,
+  };
+
+  // Données de repas factices
+  final List<Map<String, dynamic>> _meals = [
+    {
+      'name': 'Petit-déjeuner',
+      'icon': '🍳',
+      'time': '08:00',
+      'calories': 450,
+      'isCompleted': true,
+      'foods': [
+        FoodItem(
+          id: '1',
+          name: 'Yaourt grec',
+          category: 'Produits laitiers',
+          isProcessed: false,
+          calories: 150,
+          proteins: 15,
+          carbs: 6,
+          fats: 5,
+          sugar: 4,
+          fiber: 0,
+          nutrients: {},
+          imageUrl: '',
+          source: 'ciqual',
+          nutritionScore: 4.2,
+        ),
+        FoodItem(
+          id: '2',
+          name: 'Granola maison',
+          category: 'Céréales',
+          isProcessed: false,
+          calories: 200,
+          proteins: 5,
+          carbs: 30,
+          fats: 8,
+          sugar: 10,
+          fiber: 3,
+          nutrients: {},
+          imageUrl: '',
+          source: 'ciqual',
+          nutritionScore: 3.8,
+        ),
+        FoodItem(
+          id: '3',
+          name: 'Fruits rouges',
+          category: 'Fruits',
+          isProcessed: false,
+          calories: 100,
+          proteins: 1,
+          carbs: 20,
+          fats: 0,
+          sugar: 15,
+          fiber: 5,
+          nutrients: {},
+          imageUrl: '',
+          source: 'ciqual',
+          nutritionScore: 4.5,
+        ),
+      ],
+    },
+    {
+      'name': 'Déjeuner',
+      'icon': '🥗',
+      'time': '13:00',
+      'calories': 650,
+      'isCompleted': true,
+      'foods': [
+        FoodItem(
+          id: '4',
+          name: 'Salade de quinoa',
+          category: 'Plats composés',
+          isProcessed: false,
+          calories: 350,
+          proteins: 12,
+          carbs: 45,
+          fats: 10,
+          sugar: 5,
+          fiber: 8,
+          nutrients: {},
+          imageUrl: '',
+          source: 'ciqual',
+          nutritionScore: 4.3,
+        ),
+        FoodItem(
+          id: '5',
+          name: 'Blanc de poulet grillé',
+          category: 'Viandes',
+          isProcessed: false,
+          calories: 200,
+          proteins: 30,
+          carbs: 0,
+          fats: 8,
+          sugar: 0,
+          fiber: 0,
+          nutrients: {},
+          imageUrl: '',
+          source: 'ciqual',
+          nutritionScore: 4.0,
+        ),
+        FoodItem(
+          id: '6',
+          name: 'Vinaigrette légère',
+          category: 'Sauces',
+          isProcessed: true,
+          calories: 100,
+          proteins: 0,
+          carbs: 5,
+          fats: 10,
+          sugar: 2,
+          fiber: 0,
+          nutrients: {},
+          imageUrl: '',
+          source: 'openfoodfacts',
+          brand: 'Maison',
+          nutritionScore: 3.2,
+        ),
+      ],
+    },
+    {
+      'name': 'Encas',
+      'icon': '🍎',
+      'time': '16:30',
+      'calories': 200,
+      'isCompleted': true,
+      'foods': [
+        FoodItem(
+          id: '7',
+          name: 'Pomme',
+          category: 'Fruits',
+          isProcessed: false,
+          calories: 80,
+          proteins: 0,
+          carbs: 20,
+          fats: 0,
+          sugar: 15,
+          fiber: 4,
+          nutrients: {},
+          imageUrl: '',
+          source: 'ciqual',
+          nutritionScore: 4.8,
+        ),
+        FoodItem(
+          id: '8',
+          name: 'Amandes',
+          category: 'Oléagineux',
+          isProcessed: false,
+          calories: 120,
+          proteins: 4,
+          carbs: 4,
+          fats: 10,
+          sugar: 1,
+          fiber: 3,
+          nutrients: {},
+          imageUrl: '',
+          source: 'ciqual',
+          nutritionScore: 4.2,
+        ),
+      ],
+    },
+    {
+      'name': 'Dîner',
+      'icon': '🍲',
+      'time': '20:00',
+      'calories': 550,
+      'isCompleted': false,
+      'foods': [],
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialiser le contrôleur d'onglets
+    _tabController = TabController(length: 3, vsync: this);
+
+    // Charger le profil utilisateur
+    context.read<UserProfileBloc>().add(GetUserProfileEvent());
+
+    // Forcer le chargement à se terminer après un délai
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && _isLoading) {
+        print('🕒 Forcing loading to complete');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
+
+    // Configurer les animations
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeInAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+
+    // Démarrer l'animation après le chargement du widget
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _animationController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildDailyChallenges() {
+    print('🎯 Building _buildDailyChallenges()...');
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Titre avec navigation vers l'écran Challenge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🎯 Défis du jour',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ChallengeScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00D4AA), Color(0xFF00A085)],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Voir tout',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Challenge principal du jour
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00D4AA).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF00D4AA).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      '🏆',
+                      style: TextStyle(fontSize: 24),
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Challenge Lym - 7 repas sains',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2C3E50),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00D4AA).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        '+500 💎',
+                        style: TextStyle(
+                          color: Color(0xFF00D4AA),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Ajoutez 7 repas équilibrés cette semaine avec #LymChallenge',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF8E9AAF),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const LinearProgressIndicator(
+                  value: 0.2, // 2/7 complété pour exemple
+                  backgroundColor: Color(0xFFF5F7FA),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Color(0xFF00D4AA),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '2/7 complété - Continue comme ça ! 🔥',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF8E9AAF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Actions rapides
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _QuickChallengeAction(
+                icon: '🥗',
+                label: 'Repas',
+                reward: '+15 💎',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 +15 Lyms gagnés pour ce repas !'),
+                      backgroundColor: Color(0xFF00D4AA),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              _QuickChallengeAction(
+                icon: '💧',
+                label: 'Eau',
+                reward: '+5 💎',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 +5 Lyms gagnés pour l\'hydratation !'),
+                      backgroundColor: Color(0xFF00D4AA),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              _QuickChallengeAction(
+                icon: '💪',
+                label: 'Sport',
+                reward: '+30 💎',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 +30 Lyms gagnés pour le sport !'),
+                      backgroundColor: Color(0xFF00D4AA),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _QuickChallengeAction({
+    required String icon,
+    required String label,
+    required String reward,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFF00D4AA).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: Center(
+              child: Text(
+                icon,
+                style: const TextStyle(fontSize: 20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF8E9AAF),
+            ),
+          ),
+          Text(
+            reward,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Color(0xFF00D4AA),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget build(BuildContext context) {
+    print('🏠 Building HomeDashboardScreen...');
+    return BlocListener<UserProfileBloc, UserProfileState>(
+      listener: (context, state) {
+        if (state is UserProfileLoaded) {
+          setState(() {
+            _userProfile = state.userProfile;
+            _isLoading = false;
+          });
+        } else if (state is UserProfileError) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          // Afficher une notification d'erreur
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur: ${state.message}'),
+              backgroundColor: LymDesignSystem.error,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: LymDesignSystem.gray50,
+        body: () {
+          print('🔄 Dashboard body: _isLoading = $_isLoading');
+          return _isLoading ? _buildLoadingScreen() : _buildDashboard();
+        }(),
+        bottomNavigationBar: _buildBottomNavigationBar(),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            // Action pour ajouter un repas ou un aliment
+            _showAddFoodBottomSheet();
+          },
+          backgroundColor: LymDesignSystem.mint,
+          child: const Icon(Icons.add),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
+    );
+  }
+
+  /// Écran de chargement animé
+  Widget _buildLoadingScreen() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Logo ou icône de l'application
+          Container(
+            padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+            decoration: BoxDecoration(
+              color: LymDesignSystem.mint.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.eco_outlined,
+              size: 48,
+              color: LymDesignSystem.mint,
+            ),
+          ),
+
+          const SizedBox(height: LymDesignSystem.spacing24),
+
+          // Texte de chargement
+          const Text(
+            'Préparation de votre profil nutritionnel...',
+            style: TextStyle(
+              fontSize: 16,
+              color: LymDesignSystem.gray700,
+            ),
+          ),
+
+          const SizedBox(height: LymDesignSystem.spacing24),
+
+          // Indicateur de progression
+          SizedBox(
+            width: 200,
+            child: LinearProgressIndicator(
+              backgroundColor: LymDesignSystem.gray200,
+              color: LymDesignSystem.mint,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(LymDesignSystem.radiusRound),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tableau de bord principal
+  Widget _buildDashboard() {
+    print('🏠 Building dashboard with ${_isLoading ? 'loading' : 'content'}');
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          // En-tête avec informations utilisateur
+          SliverToBoxAdapter(
+            child: _buildHeader(),
+          ),
+
+          // Section Challenges du jour
+          SliverToBoxAdapter(
+            child: Container(
+              color: Colors.red.withOpacity(0.3), // Debug: rouge temporaire
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  LymDesignSystem.spacing16,
+                  LymDesignSystem.spacing16,
+                  LymDesignSystem.spacing16,
+                  LymDesignSystem.spacing8,
+                ),
+                child: _buildDailyChallenges(),
+              ),
+            ),
+          ),
+
+          // Champ de recherche
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing8,
+              ),
+              child: FadeTransition(
+                opacity: _fadeInAnimation,
+                child: const FoodSearchField(),
+              ),
+            ),
+          ),
+
+          // Onglets
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing8,
+                LymDesignSystem.spacing16,
+                0,
+              ),
+              child: FadeTransition(
+                opacity: _fadeInAnimation,
+                child: _buildTabs(),
+              ),
+            ),
+          ),
+
+          // Sélecteur de jour
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing16,
+                0,
+              ),
+              child: FadeTransition(
+                opacity: _fadeInAnimation,
+                child: _buildDaySelector(),
+              ),
+            ),
+          ),
+
+          // Résumé nutritionnel
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing16,
+                0,
+              ),
+              child: FadeTransition(
+                opacity: _fadeInAnimation,
+                child: _buildNutritionSummary(),
+              ),
+            ),
+          ),
+
+          // Liste des repas
+          SliverPadding(
+            padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  // Ajouter un délai pour chaque élément
+                  final delay = 100 + (index * 50);
+
+                  return FutureBuilder(
+                    future: Future.delayed(Duration(milliseconds: delay)),
+                    builder: (context, snapshot) {
+                      return AnimatedOpacity(
+                        opacity:
+                            snapshot.connectionState == ConnectionState.done
+                                ? 1.0
+                                : 0.0,
+                        duration: LymDesignSystem.durationMedium,
+                        curve: LymDesignSystem.curveStandard,
+                        child: AnimatedSlide(
+                          offset:
+                              snapshot.connectionState == ConnectionState.done
+                                  ? Offset.zero
+                                  : const Offset(0.1, 0),
+                          duration: LymDesignSystem.durationMedium,
+                          curve: LymDesignSystem.curveStandard,
+                          child: _buildMealCard(_meals[index]),
+                        ),
+                      );
+                    },
+                  );
+                },
+                childCount: _meals.length,
+              ),
+            ),
+          ),
+
+          // Espace en bas pour le FAB
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 80),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// En-tête avec les informations utilisateur
+  Widget _buildHeader() {
+    // Calculer les besoins caloriques
+    final dailyCalories =
+        _isLoading ? 0.0 : _userProfile.calculateDailyCalories().round();
+
+    return Container(
+      padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+      decoration: BoxDecoration(
+        color: LymDesignSystem.white,
+        boxShadow: LymDesignSystem.shadowSm,
+      ),
+      child: FadeTransition(
+        opacity: _fadeInAnimation,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Rangée supérieure avec photo et nom
+            Row(
+              children: [
+                // Avatar/Photo de profil
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: LymDesignSystem.mint.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: LymDesignSystem.mint,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _isLoading
+                          ? '👤'
+                          : (_userProfile.name?.isNotEmpty == true
+                              ? _userProfile.name![0].toUpperCase()
+                              : '👤'),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: LymDesignSystem.mint,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: LymDesignSystem.spacing16),
+
+                // Informations utilisateur
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Salutation
+                      Text(
+                        _getGreeting(),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: LymDesignSystem.gray600,
+                        ),
+                      ),
+
+                      // Nom de l'utilisateur
+                      Text(
+                        _isLoading
+                            ? 'Chargement...'
+                            : (_userProfile.name ?? 'Utilisateur'),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: LymDesignSystem.gray800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Icône de notification
+                IconButton(
+                  icon: Stack(
+                    children: [
+                      const Icon(
+                        Icons.notifications_outlined,
+                        color: LymDesignSystem.gray700,
+                        size: 28,
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: LymDesignSystem.coral,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: LymDesignSystem.white,
+                              width: 2,
+                            ),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 8,
+                            minHeight: 8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  onPressed: () {
+                    // Action pour les notifications
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: LymDesignSystem.spacing16),
+
+            // Résumé calorique et progrès
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Calories consommées vs objectif
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Calories aujourd\'hui',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: LymDesignSystem.gray600,
+                      ),
+                    ),
+                    const SizedBox(height: LymDesignSystem.spacing4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        const Text(
+                          '1,250',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: LymDesignSystem.gray800,
+                          ),
+                        ),
+                        Text(
+                          ' / $dailyCalories',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: LymDesignSystem.gray600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const Spacer(),
+
+                // Barre de progression
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Pourcentage
+                    const Text(
+                      '62%',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: LymDesignSystem.mint,
+                      ),
+                    ),
+
+                    const SizedBox(height: LymDesignSystem.spacing8),
+
+                    // Barre de progression
+                    Container(
+                      width: 120,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: LymDesignSystem.gray200,
+                        borderRadius:
+                            BorderRadius.circular(LymDesignSystem.radiusRound),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: 0.62,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                LymDesignSystem.mintLight,
+                                LymDesignSystem.mint,
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(
+                                LymDesignSystem.radiusRound),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Onglets pour naviguer entre les sections
+  Widget _buildTabs() {
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          labelColor: LymDesignSystem.mint,
+          unselectedLabelColor: LymDesignSystem.gray600,
+          indicatorColor: LymDesignSystem.mint,
+          indicatorSize: TabBarIndicatorSize.label,
+          dividerColor: Colors.transparent,
+          tabs: const [
+            Tab(text: 'Aujourd\'hui'),
+            Tab(text: 'Progrès'),
+            Tab(text: 'Recettes'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Sélecteur de jour
+  Widget _buildDaySelector() {
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: LymDesignSystem.white,
+        borderRadius: BorderRadius.circular(LymDesignSystem.radiusMd),
+        boxShadow: LymDesignSystem.shadowSm,
+      ),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: 7,
+        itemBuilder: (context, index) {
+          final isSelected = index == _selectedDay;
+          final day = _weekDays[index];
+
+          // Obtenir la date correspondante
+          final today = DateTime.now();
+          final weekday = today.weekday - 1; // 0 = lundi, 6 = dimanche
+          final diff = index - weekday;
+          final date = today.add(Duration(days: diff));
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedDay = index;
+              });
+            },
+            child: AnimatedContainer(
+              duration: LymDesignSystem.durationMedium,
+              curve: LymDesignSystem.curveStandard,
+              margin: const EdgeInsets.symmetric(
+                horizontal: LymDesignSystem.spacing8,
+                vertical: LymDesignSystem.spacing12,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: LymDesignSystem.spacing16,
+              ),
+              decoration: BoxDecoration(
+                color:
+                    isSelected ? LymDesignSystem.mint : LymDesignSystem.white,
+                borderRadius: BorderRadius.circular(LymDesignSystem.radiusMd),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: LymDesignSystem.mint.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Jour de la semaine
+                  Text(
+                    day,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? LymDesignSystem.white
+                          : LymDesignSystem.gray600,
+                    ),
+                  ),
+
+                  const SizedBox(height: LymDesignSystem.spacing4),
+
+                  // Numéro du jour
+                  Text(
+                    date.day.toString(),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected
+                          ? LymDesignSystem.white
+                          : LymDesignSystem.gray800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Résumé des nutriments
+  Widget _buildNutritionSummary() {
+    return Container(
+      padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+      decoration: BoxDecoration(
+        color: LymDesignSystem.white,
+        borderRadius: BorderRadius.circular(LymDesignSystem.radiusMd),
+        boxShadow: LymDesignSystem.shadowSm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Titre de la section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Résumé nutritionnel',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: LymDesignSystem.gray800,
+                ),
+              ),
+
+              // Bouton "Voir plus"
+              TextButton(
+                onPressed: () {
+                  // Action pour voir plus de détails
+                },
+                child: const Row(
+                  children: [
+                    Text(
+                      'Détails',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: LymDesignSystem.mint,
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 12,
+                      color: LymDesignSystem.mint,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: LymDesignSystem.spacing16),
+
+          // Grille de nutriments
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 1.1,
+              crossAxisSpacing: LymDesignSystem.spacing12,
+              mainAxisSpacing: LymDesignSystem.spacing12,
+            ),
+            itemCount: _nutrientProgress.length,
+            itemBuilder: (context, index) {
+              final entry = _nutrientProgress.entries.elementAt(index);
+              final nutrient = entry.key;
+              final progress = entry.value;
+
+              // Sélectionner une couleur en fonction du nutriment
+              Color nutrientColor;
+              IconData nutrientIcon;
+
+              switch (nutrient) {
+                case 'Calories':
+                  nutrientColor = LymDesignSystem.mint;
+                  nutrientIcon = Icons.local_fire_department;
+                  break;
+                case 'Protéines':
+                  nutrientColor = LymDesignSystem.protein;
+                  nutrientIcon = Icons.fitness_center;
+                  break;
+                case 'Glucides':
+                  nutrientColor = LymDesignSystem.carbs;
+                  nutrientIcon = Icons.grain;
+                  break;
+                case 'Lipides':
+                  nutrientColor = LymDesignSystem.fat;
+                  nutrientIcon = Icons.opacity;
+                  break;
+                case 'Fibres':
+                  nutrientColor = LymDesignSystem.fiber;
+                  nutrientIcon = Icons.grass;
+                  break;
+                case 'Eau':
+                  nutrientColor = LymDesignSystem.water;
+                  nutrientIcon = Icons.water_drop;
+                  break;
+                default:
+                  nutrientColor = LymDesignSystem.gray600;
+                  nutrientIcon = Icons.category;
+              }
+
+              return AnimatedNutrientCard(
+                nutrient: nutrient,
+                progress: progress,
+                color: nutrientColor,
+                icon: nutrientIcon,
+                delay: index * 100,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Carte pour un repas
+  Widget _buildMealCard(Map<String, dynamic> meal) {
+    final isCompleted = meal['isCompleted'] as bool;
+    final foods = meal['foods'] as List<FoodItem>;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: LymDesignSystem.spacing16),
+      decoration: BoxDecoration(
+        color: LymDesignSystem.white,
+        borderRadius: BorderRadius.circular(LymDesignSystem.radiusMd),
+        boxShadow: LymDesignSystem.shadowSm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // En-tête du repas
+          Padding(
+            padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+            child: Row(
+              children: [
+                // Icône du repas
+                Container(
+                  padding: const EdgeInsets.all(LymDesignSystem.spacing8),
+                  decoration: BoxDecoration(
+                    color: LymDesignSystem.mint.withValues(alpha: 0.1),
+                    borderRadius:
+                        BorderRadius.circular(LymDesignSystem.radiusMd),
+                  ),
+                  child: Text(
+                    meal['icon'] as String,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                ),
+
+                const SizedBox(width: LymDesignSystem.spacing12),
+
+                // Nom et heure du repas
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        meal['name'] as String,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: LymDesignSystem.gray800,
+                        ),
+                      ),
+                      Text(
+                        meal['time'] as String,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: LymDesignSystem.gray600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Calories et badge de statut
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Calories
+                    Text(
+                      '${meal['calories']} kcal',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: LymDesignSystem.gray800,
+                      ),
+                    ),
+
+                    const SizedBox(height: LymDesignSystem.spacing4),
+
+                    // Badge de statut
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: LymDesignSystem.spacing8,
+                        vertical: LymDesignSystem.spacing2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isCompleted
+                            ? LymDesignSystem.mint.withValues(alpha: 0.1)
+                            : LymDesignSystem.gray100,
+                        borderRadius:
+                            BorderRadius.circular(LymDesignSystem.radiusRound),
+                        border: Border.all(
+                          color: isCompleted
+                              ? LymDesignSystem.mint.withValues(alpha: 0.3)
+                              : LymDesignSystem.gray300,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        isCompleted ? 'Complété' : 'À planifier',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: isCompleted
+                              ? LymDesignSystem.mint
+                              : LymDesignSystem.gray600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Liste des aliments
+          if (foods.isNotEmpty)
+            Column(
+              children: [
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Titre de la section
+                      const Text(
+                        'Aliments',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: LymDesignSystem.gray700,
+                        ),
+                      ),
+
+                      const SizedBox(height: LymDesignSystem.spacing8),
+
+                      // Liste des aliments
+                      ...foods.map((food) => _buildFoodItem(food)).toList(),
+
+                      // Bouton pour ajouter un aliment
+                      TextButton.icon(
+                        onPressed: () {
+                          // Action pour ajouter un aliment
+                          _showAddFoodBottomSheet();
+                        },
+                        icon: const Icon(
+                          Icons.add,
+                          size: 16,
+                          color: LymDesignSystem.mint,
+                        ),
+                        label: const Text(
+                          'Ajouter un aliment',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: LymDesignSystem.mint,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 30),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          alignment: Alignment.centerLeft,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          else
+            // Repas vide avec bouton d'ajout
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                LymDesignSystem.spacing16,
+                0,
+                LymDesignSystem.spacing16,
+                LymDesignSystem.spacing16,
+              ),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  // Action pour ajouter un aliment
+                  _showAddFoodBottomSheet();
+                },
+                icon: const Icon(
+                  Icons.add,
+                  size: 18,
+                  color: LymDesignSystem.mint,
+                ),
+                label: const Text('Ajouter des aliments'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: LymDesignSystem.mint,
+                  side: const BorderSide(
+                    color: LymDesignSystem.mint,
+                    width: 1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: LymDesignSystem.spacing12,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Item d'aliment dans un repas
+  Widget _buildFoodItem(FoodItem food) {
+    // Couleur basée sur le score nutritionnel
+    final scoreColor =
+        LymDesignSystem.getNutritionScoreColor(food.nutritionScore);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: LymDesignSystem.spacing8),
+      child: Row(
+        children: [
+          // Indicateur de score nutritionnel
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: scoreColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 1,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: LymDesignSystem.spacing8),
+
+          // Nom de l'aliment
+          Expanded(
+            child: Text(
+              food.name,
+              style: const TextStyle(
+                fontSize: 14,
+                color: LymDesignSystem.gray800,
+              ),
+            ),
+          ),
+
+          // Calories
+          Text(
+            '${food.calories.round()} kcal',
+            style: const TextStyle(
+              fontSize: 12,
+              color: LymDesignSystem.gray600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Barre de navigation inférieure
+  Widget _buildBottomNavigationBar() {
+    return BottomAppBar(
+      elevation: 8,
+      notchMargin: 8,
+      shape: const CircularNotchedRectangle(),
+      color: LymDesignSystem.white,
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: LymDesignSystem.spacing8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            // Accueil
+            _buildNavBarItem(
+              icon: Icons.home_filled,
+              label: 'Accueil',
+              isSelected: true,
+              onTap: () {},
+            ),
+
+            // Journal
+            _buildNavBarItem(
+              icon: Icons.menu_book,
+              label: 'Journal',
+              isSelected: false,
+              onTap: () {},
+            ),
+
+            // Espace pour le FAB
+            const SizedBox(width: 40),
+
+            // Défis
+            _buildNavBarItem(
+              icon: Icons.emoji_events,
+              label: 'Défis',
+              isSelected: false,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ChallengeScreen(),
+                  ),
+                );
+              },
+            ),
+
+            // Paramètres
+            _buildNavBarItem(
+              icon: Icons.person,
+              label: 'Profil',
+              isSelected: false,
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Item de la barre de navigation
+  Widget _buildNavBarItem({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LymDesignSystem.spacing8,
+          vertical: LymDesignSystem.spacing12,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color:
+                  isSelected ? LymDesignSystem.mint : LymDesignSystem.gray500,
+              size: 24,
+            ),
+            const SizedBox(height: LymDesignSystem.spacing4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color:
+                    isSelected ? LymDesignSystem.mint : LymDesignSystem.gray500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Affiche la feuille d'ajout d'aliment
+  void _showAddFoodBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: LymDesignSystem.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(LymDesignSystem.radiusXl),
+              topRight: Radius.circular(LymDesignSystem.radiusXl),
+            ),
+            boxShadow: LymDesignSystem.shadowLg,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Poignée de la feuille
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: LymDesignSystem.spacing12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: LymDesignSystem.gray300,
+                    borderRadius:
+                        BorderRadius.circular(LymDesignSystem.radiusRound),
+                  ),
+                ),
+              ),
+
+              // En-tête
+              Padding(
+                padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+                child: Row(
+                  children: [
+                    // Icône
+                    Container(
+                      padding: const EdgeInsets.all(LymDesignSystem.spacing8),
+                      decoration: BoxDecoration(
+                        color: LymDesignSystem.mint.withValues(alpha: 0.1),
+                        borderRadius:
+                            BorderRadius.circular(LymDesignSystem.radiusMd),
+                      ),
+                      child: const Icon(
+                        Icons.restaurant,
+                        color: LymDesignSystem.mint,
+                      ),
+                    ),
+
+                    const SizedBox(width: LymDesignSystem.spacing12),
+
+                    // Titre
+                    const Expanded(
+                      child: Text(
+                        'Ajouter un aliment',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: LymDesignSystem.gray800,
+                        ),
+                      ),
+                    ),
+
+                    // Bouton de fermeture
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: LymDesignSystem.gray700,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              // Champ de recherche
+              const Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: LymDesignSystem.spacing16,
+                ),
+                child: FoodSearchField(),
+              ),
+
+              // Options d'ajout rapide
+              Padding(
+                padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Ajouter rapidement',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: LymDesignSystem.gray800,
+                      ),
+                    ),
+
+                    const SizedBox(height: LymDesignSystem.spacing12),
+
+                    // Options d'ajout
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildQuickAddOption(
+                          icon: Icons.mic,
+                          label: 'Vocal',
+                          color: LymDesignSystem.coral,
+                          onTap: () {},
+                        ),
+                        _buildQuickAddOption(
+                          icon: Icons.camera_alt,
+                          label: 'Photo',
+                          color: LymDesignSystem.indigo,
+                          onTap: () {},
+                        ),
+                        _buildQuickAddOption(
+                          icon: Icons.receipt_long,
+                          label: 'Ticket',
+                          color: LymDesignSystem.amber,
+                          onTap: () {},
+                        ),
+                        _buildQuickAddOption(
+                          icon: Icons.add_box,
+                          label: 'Manuel',
+                          color: LymDesignSystem.mint,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Historique récent
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(LymDesignSystem.spacing16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Récents',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: LymDesignSystem.gray800,
+                        ),
+                      ),
+
+                      const SizedBox(height: LymDesignSystem.spacing12),
+
+                      // Liste des aliments récents
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: 10,
+                          itemBuilder: (context, index) {
+                            // Simuler des aliments récents
+                            final foodNames = [
+                              'Yaourt grec',
+                              'Pomme',
+                              'Pain complet',
+                              'Œufs brouillés',
+                              'Poulet grillé',
+                              'Salade verte',
+                              'Riz complet',
+                              'Banane',
+                              'Fromage frais',
+                              'Amandes',
+                            ];
+
+                            return ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(
+                                    LymDesignSystem.spacing8),
+                                decoration: BoxDecoration(
+                                  color: LymDesignSystem.gray100,
+                                  borderRadius: BorderRadius.circular(
+                                      LymDesignSystem.radiusMd),
+                                ),
+                                child: const Icon(
+                                  Icons.restaurant,
+                                  color: LymDesignSystem.gray600,
+                                  size: 20,
+                                ),
+                              ),
+                              title: Text(
+                                foodNames[index],
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: LymDesignSystem.gray800,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${(index + 1) * 50} kcal',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: LymDesignSystem.gray600,
+                                ),
+                              ),
+                              trailing: const Icon(
+                                Icons.add_circle_outline,
+                                color: LymDesignSystem.mint,
+                              ),
+                              onTap: () {
+                                // Action pour ajouter l'aliment
+                                Navigator.of(context).pop();
+
+                                // Afficher une confirmation
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('${foodNames[index]} ajouté'),
+                                    backgroundColor: LymDesignSystem.mint,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Option d'ajout rapide
+  Widget _buildQuickAddOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          // Icône
+          Container(
+            padding: const EdgeInsets.all(LymDesignSystem.spacing12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+
+          const SizedBox(height: LymDesignSystem.spacing8),
+
+          // Libellé
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: LymDesignSystem.gray700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Obtenir une salutation en fonction de l'heure
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour < 12) {
+      return 'Bonjour';
+    } else if (hour < 18) {
+      return 'Bon après-midi';
+    } else {
+      return 'Bonsoir';
+    }
+  }
+}
+
+/// Widget de carte de nutriment animée
+class AnimatedNutrientCard extends StatefulWidget {
+  final String nutrient;
+  final double progress;
+  final Color color;
+  final IconData icon;
+  final int delay;
+
+  const AnimatedNutrientCard({
+    Key? key,
+    required this.nutrient,
+    required this.progress,
+    required this.color,
+    required this.icon,
+    this.delay = 0,
+  }) : super(key: key);
+
+  @override
+  State<AnimatedNutrientCard> createState() => _AnimatedNutrientCardState();
+}
+
+class _AnimatedNutrientCardState extends State<AnimatedNutrientCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _progressAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Configuration de l'animation
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _progressAnimation = Tween<double>(
+      begin: 0.0,
+      end: widget.progress,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    // Démarrer l'animation après un délai
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          padding: const EdgeInsets.all(LymDesignSystem.spacing12),
+          decoration: BoxDecoration(
+            color: LymDesignSystem.white,
+            borderRadius: BorderRadius.circular(LymDesignSystem.radiusMd),
+            border: Border.all(
+              color: LymDesignSystem.gray200,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icône du nutriment
+              Icon(
+                widget.icon,
+                color: widget.color,
+                size: 20,
+              ),
+
+              const SizedBox(height: LymDesignSystem.spacing8),
+
+              // Nom du nutriment
+              Text(
+                widget.nutrient,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: LymDesignSystem.gray700,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: LymDesignSystem.spacing8),
+
+              // Indicateur de progression circulaire
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Stack(
+                  children: [
+                    // Fond
+                    const CircularProgressIndicator(
+                      value: 1.0,
+                      strokeWidth: 4,
+                      backgroundColor: LymDesignSystem.gray200,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        LymDesignSystem.gray200,
+                      ),
+                    ),
+
+                    // Progression
+                    CircularProgressIndicator(
+                      value: _progressAnimation.value,
+                      strokeWidth: 4,
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(widget.color),
+                    ),
+
+                    // Pourcentage
+                    Center(
+                      child: Text(
+                        '${(_progressAnimation.value * 100).round()}%',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: widget.color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Champ de recherche d'aliments
+class FoodSearchField extends StatelessWidget {
+  const FoodSearchField({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: LymDesignSystem.white,
+        borderRadius: BorderRadius.circular(LymDesignSystem.radiusMd),
+        boxShadow: LymDesignSystem.shadowSm,
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Rechercher un aliment...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.mic,
+                  color: LymDesignSystem.coral,
+                ),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.camera_alt,
+                  color: LymDesignSystem.indigo,
+                ),
+                onPressed: () {},
+              ),
+            ],
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: LymDesignSystem.spacing12,
+          ),
+        ),
+      ),
+    );
+  }
+}

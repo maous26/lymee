@@ -11,10 +11,11 @@ import 'package:lym_nutrition/presentation/screens/onboarding/steps/weight_goal_
 import 'package:lym_nutrition/presentation/screens/onboarding/steps/dietary_preferences_step.dart';
 import 'package:lym_nutrition/presentation/screens/onboarding/steps/fasting_schedule_step.dart';
 import 'package:lym_nutrition/presentation/screens/onboarding/steps/supplements_step.dart';
+import 'package:lym_nutrition/presentation/screens/onboarding/steps/meal_planning_step.dart';
 import 'package:lym_nutrition/presentation/screens/onboarding/steps/summary_step.dart';
-import 'package:lym_nutrition/presentation/widgets/modern_onboarding_container.dart';
-import 'package:lym_nutrition/presentation/models/onboarding_step_data.dart';
-import 'package:lym_nutrition/presentation/themes/wellness_colors.dart';
+import 'package:lym_nutrition/presentation/widgets/lym_onboarding_container.dart';
+import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
+
 import 'package:uuid/uuid.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -24,103 +25,214 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen>
-    with TickerProviderStateMixin {
-  final PageController _pageController = PageController(initialPage: 0);
-  int _currentPage = 0;
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  int _currentStepIndex = 0;
   late UserProfile _userProfile;
   bool _isSubmitting = false;
-  late AnimationController _pageTransitionController;
 
-  final List<OnboardingStepData> _steps = [
-    OnboardingStepData(
-      title: 'Informations personnelles',
-      subtitle: 'Parlons de vous pour personnaliser votre expérience',
-      emoji: '👤',
-      icon: Icons.person_rounded,
-      primaryColor: WellnessColors.primaryGreen,
-    ),
-    OnboardingStepData(
-      title: 'Niveau d\'activité',
-      subtitle: 'Quel sport pratiquez-vous ? À quelle fréquence ?',
-      emoji: '🏃‍♀️',
-      icon: Icons.fitness_center_rounded,
-      primaryColor: WellnessColors.sunsetOrange,
-    ),
-    OnboardingStepData(
-      title: 'Objectif de poids',
-      subtitle: 'Définissons ensemble vos objectifs de transformation',
-      emoji: '🎯',
-      icon: Icons.track_changes_rounded,
-      primaryColor: WellnessColors.secondaryBlue,
-    ),
-    OnboardingStepData(
-      title: 'Préférences alimentaires',
-      subtitle: 'Quels sont vos goûts et restrictions alimentaires ?',
-      emoji: '🥗',
-      icon: Icons.restaurant_rounded,
-      primaryColor: WellnessColors.mintGreen,
-    ),
-    OnboardingStepData(
-      title: 'Jeûne intermittent',
-      subtitle: 'Pratiquez-vous le jeûne ? Définissons vos horaires',
-      emoji: '⏰',
-      icon: Icons.schedule_rounded,
-      primaryColor: WellnessColors.accentPeach,
-    ),
-    OnboardingStepData(
-      title: 'Compléments alimentaires',
-      subtitle: 'Quels suppléments prenez-vous actuellement ?',
-      emoji: '💊',
-      icon: Icons.medical_services_rounded,
-      primaryColor: WellnessColors.lavenderBlue,
-    ),
-    OnboardingStepData(
-      title: 'Récapitulatif',
-      subtitle: 'Validons ensemble votre profil nutritionnel',
-      emoji: '✨',
-      icon: Icons.check_circle_rounded,
-      primaryColor: WellnessColors.primaryGreen,
-    ),
-  ];
+  final GlobalKey<BasicInfoStepState> _basicInfoStepKey =
+      GlobalKey<BasicInfoStepState>();
+  final GlobalKey<ActivityLevelStepState> _activityLevelStepKey =
+      GlobalKey<ActivityLevelStepState>();
+  final GlobalKey<WeightGoalStepState> _weightGoalStepKey =
+      GlobalKey<WeightGoalStepState>();
+  final GlobalKey<DietaryPreferencesStepState> _dietaryPreferencesStepKey =
+      GlobalKey<DietaryPreferencesStepState>();
+  final GlobalKey<FastingScheduleStepState> _fastingScheduleStepKey =
+      GlobalKey<FastingScheduleStepState>();
+  final GlobalKey<SupplementsStepState> _supplementsStepKey =
+      GlobalKey<SupplementsStepState>();
+  final GlobalKey<MealPlanningStepState> _mealPlanningStepKey =
+      GlobalKey<MealPlanningStepState>();
+  // No GlobalKey needed for SummaryStep as its primary actions are submit or edit (navigation)
+
+  late List<Widget> _onboardingSteps;
+  late List<String> _stepTitles;
+  late List<String> _stepSubtitles;
+  late List<Color> _stepAccentColors;
 
   @override
   void initState() {
     super.initState();
-    _userProfile = UserProfile.defaultProfile(const Uuid().v4());
-    _pageTransitionController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
+    _userProfile =
+        UserProfile.empty(const Uuid().v4()); // Changed defaultProfile to empty
+    _initializeStepsAndConfiguration();
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _pageTransitionController.dispose();
-    super.dispose();
+  void _initializeStepsAndConfiguration() {
+    // Titles for each step
+    _stepTitles = [
+      'Welcome to Lym!',
+      'Activity Level',
+      'Weight Goal',
+      'Dietary Preferences',
+      'Fasting Schedule',
+      'Supplements',
+      'Meal Planning',
+      'Summary & Start',
+    ];
+
+    // Subtitles for each step
+    _stepSubtitles = [
+      'Let\'s get to know you a bit better.', // Corrected escaping
+      'Tell us about your typical physical activity.',
+      'What are you aiming for with your weight?',
+      'Any food allergies, restrictions, or strong preferences?',
+      'Do you practice or plan to practice intermittent fasting?',
+      'Are you currently taking any dietary supplements?',
+      'Tell us about your cooking skills and budget.',
+      'Review your information and begin your personalized journey!',
+    ];
+
+    // Using existing FreshTheme colors
+    _stepAccentColors = [
+      FreshTheme.primaryMint, // Basic Info
+      FreshTheme.accentCoral, // Activity Level
+      FreshTheme.deepOcean, // Weight Goal
+      FreshTheme.serenityBlue, // Dietary Preferences
+      FreshTheme.serenityBlue, // Fasting Schedule
+      FreshTheme.warmAmber, // Supplements
+      FreshTheme.serenityBlue, // Meal Planning
+      FreshTheme.accentCoral, // Summary
+    ];
+
+    // Define the onboarding step widgets
+    _onboardingSteps = [
+      BasicInfoStep(
+        key: _basicInfoStepKey,
+        userProfile: _userProfile,
+        onUpdateProfile:
+            _updateUserProfile, // BasicInfoStep updates the profile directly
+        onNextRequested:
+            _actualAdvanceAndReinitialize, // Parent handles advancement
+      ),
+      ActivityLevelStep(
+        key: _activityLevelStepKey,
+        userProfile: _userProfile,
+        onUpdateProfile: _updateUserProfile,
+        onNextRequested: _actualAdvanceAndReinitialize,
+      ),
+      WeightGoalStep(
+        key: _weightGoalStepKey,
+        userProfile: _userProfile,
+        onUpdateProfile: _updateUserProfile,
+        onNextRequested: _actualAdvanceAndReinitialize,
+      ),
+      DietaryPreferencesStep(
+        key: _dietaryPreferencesStepKey,
+        userProfile: _userProfile,
+        onUpdateProfile: _updateUserProfile,
+        onNextRequested: _actualAdvanceAndReinitialize,
+      ),
+      FastingScheduleStep(
+        key: _fastingScheduleStepKey,
+        userProfile: _userProfile,
+        onUpdateProfile: _updateUserProfile,
+        onNextRequested: _actualAdvanceAndReinitialize,
+      ),
+      SupplementsStep(
+        key: _supplementsStepKey,
+        userProfile:
+            _userProfile, // Pass the full profile for context if needed
+        initialSupplements:
+            _userProfile.supplements, // Pass initial supplements
+        onNextRequested:
+            _actualAdvanceAndReinitialize, // Parent handles advancement
+        // onUpdateProfile is not directly passed; changes are handled via _supplementsStepKey
+      ),
+      MealPlanningStep(
+        key: _mealPlanningStepKey,
+        userProfile: _userProfile,
+        onUpdateProfile: _updateUserProfile,
+        onNextRequested: _actualAdvanceAndReinitialize,
+      ),
+      SummaryStep(
+        userProfile:
+            _userProfile, // SummaryStep always gets the latest _userProfile
+        onSubmit: _submitUserProfile,
+        isSubmitting: _isSubmitting,
+        onEdit: (stepIndex) {
+          if (stepIndex >= 0 && stepIndex < _onboardingSteps.length) {
+            setState(() {
+              _currentStepIndex = stepIndex;
+              // Crucially, re-initialize to ensure the step being jumped to
+              // and the summary (if returned to) reflect the most current state.
+              _initializeStepsAndConfiguration();
+            });
+          }
+        },
+      ),
+    ];
   }
 
-  void _goToNextPage() {
-    if (_currentPage < _steps.length - 1) {
-      _pageTransitionController.forward().then((_) {
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        _pageTransitionController.reverse();
+  // New method to handle actual advancement and re-initialization
+  void _actualAdvanceAndReinitialize() {
+    if (_currentStepIndex < _onboardingSteps.length - 1) {
+      setState(() {
+        _currentStepIndex++;
+        // Re-initialize steps to ensure all steps (especially SummaryStep)
+        // are built with the latest _userProfile data.
+        _initializeStepsAndConfiguration();
       });
     }
   }
 
-  void _goToPreviousPage() {
-    if (_currentPage > 0) {
-      _pageTransitionController.forward().then((_) {
-        _pageController.previousPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        _pageTransitionController.reverse();
+  void _handleNextTap() {
+    if (_isSubmitting) return;
+
+    bool isLastStep = _currentStepIndex == _onboardingSteps.length - 1;
+
+    if (isLastStep) {
+      _submitUserProfile();
+      return; // Submission handles navigation or state change
+    }
+
+    // Trigger validation on the current step.
+    // The step's validateAndProceed method should call its onNextRequested callback
+    // (which is _actualAdvanceAndReinitialize) if validation passes.
+    Widget currentStepWidget = _onboardingSteps[_currentStepIndex];
+
+    if (currentStepWidget is BasicInfoStep) {
+      _basicInfoStepKey.currentState?.validateAndProceed();
+    } else if (currentStepWidget is ActivityLevelStep) {
+      _activityLevelStepKey.currentState?.validateAndProceed();
+    } else if (currentStepWidget is WeightGoalStep) {
+      _weightGoalStepKey.currentState?.validateAndProceed();
+    } else if (currentStepWidget is DietaryPreferencesStep) {
+      _dietaryPreferencesStepKey.currentState?.validateAndProceed();
+    } else if (currentStepWidget is FastingScheduleStep) {
+      _fastingScheduleStepKey.currentState?.validateAndProceed();
+    } else if (currentStepWidget is SupplementsStep) {
+      // For SupplementsStep, we need to get the current supplements
+      // and update the profile BEFORE validation, so SummaryStep gets the data.
+      final currentSupplements =
+          _supplementsStepKey.currentState?.currentSupplements;
+      if (currentSupplements != null) {
+        // This will update _userProfile and trigger _initializeStepsAndConfiguration
+        _updateUserProfile(
+            _userProfile.copyWith(supplements: currentSupplements));
+      }
+      // Now, validateAndProceed can be called. If it calls onNextRequested,
+      // _actualAdvanceAndReinitialize will use the already updated profile.
+      _supplementsStepKey.currentState?.validateAndProceed();
+    } else if (currentStepWidget is MealPlanningStep) {
+      _mealPlanningStepKey.currentState?.validateAndProceed();
+    } else {
+      // Fallback for any step not explicitly handled or if a step doesn't need validation
+      // and directly calls onNextRequested (which is _actualAdvanceAndReinitialize).
+      // However, all interactive steps should ideally have a validateAndProceed.
+      _actualAdvanceAndReinitialize();
+    }
+  }
+
+  void _goToPreviousStep() {
+    if (_isSubmitting) return;
+    if (_currentStepIndex > 0) {
+      setState(() {
+        _currentStepIndex--;
+        // Re-initialize to ensure the step being returned to has the correct state
+        // and subsequent steps (like summary) are also based on potentially changed data.
+        _initializeStepsAndConfiguration();
       });
     }
   }
@@ -128,206 +240,106 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void _updateUserProfile(UserProfile updatedProfile) {
     setState(() {
       _userProfile = updatedProfile;
+      // CRITICAL: Re-initialize steps whenever the profile is updated.
+      // This ensures that all step widgets are rebuilt with the latest data,
+      // particularly important for SummaryStep and for steps that might depend
+      // on data from previous steps.
+      _initializeStepsAndConfiguration();
     });
   }
 
   void _submitUserProfile() {
+    if (_isSubmitting) return;
+    // Ensure the final state of supplements is captured if user is on SupplementsStep and clicks "Finish"
+    // (though "Finish" is typically on SummaryStep)
+    // Or, more robustly, ensure SummaryStep is built with the absolute latest profile.
+    // The _initializeStepsAndConfiguration call in _updateUserProfile and navigation methods should handle this.
+
+    // One final check for supplements if the current step IS supplements step and somehow submit is called
+    // This is more of a safeguard; primary update path is via _handleNextTap for SupplementsStep.
+    if (_onboardingSteps[_currentStepIndex] is SupplementsStep) {
+      final currentSupplements =
+          _supplementsStepKey.currentState?.currentSupplements;
+      if (currentSupplements != null &&
+          _userProfile.supplements != currentSupplements) {
+        _userProfile = _userProfile.copyWith(supplements: currentSupplements);
+        // Not calling _initializeStepsAndConfiguration here as we are about to submit and potentially navigate away.
+      }
+    }
+
     setState(() {
       _isSubmitting = true;
     });
     context.read<UserProfileBloc>().add(
           SaveUserProfileEvent(userProfile: _userProfile),
         );
-  }
-
-  AppBar? _buildModernAppBar() {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.arrow_back_rounded,
-            color: WellnessColors.textPrimary,
-            size: 20,
-          ),
-        ),
-        onPressed: _goToPreviousPage,
-      ),
-    );
+    // Navigation to the main app screen after submission will be handled by BlocListener
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: WellnessColors.backgroundSecondary,
-      appBar: _currentPage > 0 ? _buildModernAppBar() : null,
-      body: BlocListener<UserProfileBloc, UserProfileState>(
-        listener: (context, state) {
-          if (state is UserProfileSaved) {
-            setState(() {
-              _isSubmitting = false;
-            });
-            Navigator.of(context).pushReplacementNamed('/dashboard');
-          } else if (state is UserProfileError) {
-            setState(() {
-              _isSubmitting = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur: ${state.message}'),
-                backgroundColor: WellnessColors.errorCoral,
-              ),
-            );
-          }
-        },
-        child: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          onPageChanged: (int page) {
-            setState(() {
-              _currentPage = page;
-            });
-          },
-          children: [
-            // Étape 1: Informations de base
-            ModernOnboardingContainer(
-              title: _steps[0].title,
-              subtitle: _steps[0].subtitle,
-              titleIcon: _steps[0].icon,
-              illustrationEmoji: _steps[0].emoji,
-              primaryColor: _steps[0].primaryColor,
-              currentStep: 0,
-              totalSteps: _steps.length,
-              onNext: () {
-                // Valider et sauvegarder avant de passer à l'étape suivante
-                _goToNextPage();
-              },
-              content: BasicInfoStep(
-                userProfile: _userProfile,
-                onUpdateProfile: _updateUserProfile,
-                onNext: _goToNextPage,
-              ),
-            ),
+    // Ensure _onboardingSteps is initialized and _currentStepIndex is valid
+    // This check prevents errors if build is called before initState completes fully
+    // or if _currentStepIndex is somehow out of bounds.
+    if (_onboardingSteps.isEmpty ||
+        _currentStepIndex >= _onboardingSteps.length ||
+        _stepTitles.isEmpty ||
+        _currentStepIndex >= _stepTitles.length ||
+        _stepSubtitles.isEmpty ||
+        _currentStepIndex >= _stepSubtitles.length ||
+        _stepAccentColors.isEmpty ||
+        _currentStepIndex >= _stepAccentColors.length) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-            // Étape 2: Niveau d'activité
-            ModernOnboardingContainer(
-              title: _steps[1].title,
-              subtitle: _steps[1].subtitle,
-              titleIcon: _steps[1].icon,
-              illustrationEmoji: _steps[1].emoji,
-              primaryColor: _steps[1].primaryColor,
-              currentStep: 1,
-              totalSteps: _steps.length,
-              onNext: _goToNextPage,
-              content: ActivityLevelStep(
-                userProfile: _userProfile,
-                onUpdateProfile: _updateUserProfile,
-                onNext: _goToNextPage,
-              ),
-            ),
+    bool isLastStep = _currentStepIndex == _onboardingSteps.length - 1;
+    String nextButtonText = isLastStep ? 'Finish & Start' : 'Next';
+    if (_isSubmitting && isLastStep) {
+      nextButtonText = 'Starting...';
+    }
 
-            // Étape 3: Objectif de poids
-            ModernOnboardingContainer(
-              title: _steps[2].title,
-              subtitle: _steps[2].subtitle,
-              titleIcon: _steps[2].icon,
-              illustrationEmoji: _steps[2].emoji,
-              primaryColor: _steps[2].primaryColor,
-              currentStep: 2,
-              totalSteps: _steps.length,
-              onNext: _goToNextPage,
-              content: WeightGoalStep(
-                userProfile: _userProfile,
-                onUpdateProfile: _updateUserProfile,
-                onNext: _goToNextPage,
-              ),
-            ),
-
-            // Étape 4: Préférences alimentaires
-            ModernOnboardingContainer(
-              title: _steps[3].title,
-              subtitle: _steps[3].subtitle,
-              titleIcon: _steps[3].icon,
-              illustrationEmoji: _steps[3].emoji,
-              primaryColor: _steps[3].primaryColor,
-              currentStep: 3,
-              totalSteps: _steps.length,
-              onNext: _goToNextPage,
-              content: DietaryPreferencesStep(
-                userProfile: _userProfile,
-                onUpdateProfile: _updateUserProfile,
-                onNext: _goToNextPage,
-              ),
-            ),
-
-            // Étape 5: Jeûne intermittent
-            ModernOnboardingContainer(
-              title: _steps[4].title,
-              subtitle: _steps[4].subtitle,
-              titleIcon: _steps[4].icon,
-              illustrationEmoji: _steps[4].emoji,
-              primaryColor: _steps[4].primaryColor,
-              currentStep: 4,
-              totalSteps: _steps.length,
-              onNext: _goToNextPage,
-              content: FastingScheduleStep(
-                userProfile: _userProfile,
-                onUpdateProfile: _updateUserProfile,
-                onNext: _goToNextPage,
-              ),
-            ),
-
-            // Étape 6: Compléments alimentaires
-            ModernOnboardingContainer(
-              title: _steps[5].title,
-              subtitle: _steps[5].subtitle,
-              titleIcon: _steps[5].icon,
-              illustrationEmoji: _steps[5].emoji,
-              primaryColor: _steps[5].primaryColor,
-              currentStep: 5,
-              totalSteps: _steps.length,
-              onNext: _goToNextPage,
-              content: SupplementsStep(
-                userProfile: _userProfile,
-                onUpdateProfile: _updateUserProfile,
-                onNext: _goToNextPage,
-              ),
-            ),
-
-            // Étape 7: Résumé
-            ModernOnboardingContainer(
-              title: _steps[6].title,
-              subtitle: _steps[6].subtitle,
-              titleIcon: _steps[6].icon,
-              illustrationEmoji: _steps[6].emoji,
-              primaryColor: _steps[6].primaryColor,
-              currentStep: 6,
-              totalSteps: _steps.length,
-              nextButtonText: 'Créer mon profil',
-              isLoading: _isSubmitting,
-              onNext: _submitUserProfile,
-              content: SummaryStep(
-                userProfile: _userProfile,
-                onSubmit: _submitUserProfile,
-                isSubmitting: _isSubmitting,
-              ),
-            ),
-          ],
+    return BlocListener<UserProfileBloc, UserProfileState>(
+      listener: (context, state) {
+        if (state is UserProfileSaved) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile Saved! Welcome!')),
+          );
+          // Navigate to the main dashboard after successful profile save
+          Navigator.of(context).pushReplacementNamed('/dashboard');
+        } else if (state is UserProfileError) {
+          setState(() {
+            _isSubmitting = false; // Reset submitting state on error
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving profile: ${state.message}')),
+          );
+        }
+      },
+      child: LymOnboardingContainer(
+        title: _stepTitles[_currentStepIndex],
+        subtitle: _stepSubtitles[_currentStepIndex],
+        currentStep: _currentStepIndex,
+        totalSteps: _onboardingSteps.length,
+        onNext: _isSubmitting ? null : _handleNextTap,
+        onBack:
+            _currentStepIndex == 0 || _isSubmitting ? null : _goToPreviousStep,
+        nextButtonText: nextButtonText,
+        accentColor: _stepAccentColors[_currentStepIndex],
+        child: IndexedStack(
+          index: _currentStepIndex,
+          children: _onboardingSteps,
         ),
       ),
     );
   }
 }
+
+// Ensure other step files (ActivityLevelStep, WeightGoalStep, etc.) are updated
+// to have onNextRequested and onUpdateProfile parameters and a validateAndProceed method.
+// BasicInfoStep already has: userProfile, onUpdateProfile, onNextRequested, validateAndProceed
+// ActivityLevelStep needs: userProfile, onUpdateProfile, onNextRequested, validateAndProceed
+// WeightGoalStep needs: userProfile, onUpdateProfile, onNextRequested, validateAndProceed
+// DietaryPreferencesStep needs: userProfile, onUpdateProfile, onNextRequested, validateAndProceed
+// FastingScheduleStep needs: userProfile, onUpdateProfile, onNextRequested, validateAndProceed
+// SupplementsStep has: userProfile, initialSupplements, onNextRequested, validateAndProceed, currentSupplements getter
+// SummaryStep has: userProfile, onSubmit, isSubmitting, onEdit
