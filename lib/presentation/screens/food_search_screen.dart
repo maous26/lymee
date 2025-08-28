@@ -250,6 +250,12 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                   tooltip: 'Retour',
                   onPressed: () => Navigator.of(context).pop(),
                 ),
+                // Scanner button
+                IconButton(
+                  icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                  tooltip: 'Scanner un produit',
+                  onPressed: () => Navigator.of(context).pushNamed('/scanner'),
+                ),
                 // Brand filter toggle button
                 IconButton(
                   icon: Icon(

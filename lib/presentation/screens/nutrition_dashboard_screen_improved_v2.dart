@@ -39,10 +39,7 @@ class NutritionDashboardScreenV2State extends State<NutritionDashboardScreenV2>
   List<MealFood> _savedDailyMeals = [];
   List<MealFood> _individualMealsToday = [];
 
-  // Scanner halo (first-time attention)
-  late AnimationController _scannerHaloController;
-  late Animation<double> _scannerHalo;
-  bool _showScannerHalo = false;
+
 
   // Gamification
   late GamificationService _gamificationService;
@@ -58,16 +55,7 @@ class NutritionDashboardScreenV2State extends State<NutritionDashboardScreenV2>
     context.read<UserProfileBloc>().add(GetUserProfileEvent());
     _loadSavedMeals();
 
-    // Init scanner halo animation
-    _scannerHaloController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-    _scannerHalo = CurvedAnimation(
-      parent: _scannerHaloController,
-      curve: Curves.easeInOut,
-    );
-    _initScannerHaloOnce();
+
     _initGamification();
   }
 
@@ -107,30 +95,13 @@ class NutritionDashboardScreenV2State extends State<NutritionDashboardScreenV2>
 
   @override
   void dispose() {
-    _scannerHaloController.dispose();
     _periodTabController.dispose();
     _mealTabController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  Future<void> _initScannerHaloOnce() async {
-    final prefs = await SharedPreferences.getInstance();
-    final shown = prefs.getBool('scanner_halo_shown') ?? false;
-    if (!shown && mounted) {
-      setState(() {
-        _showScannerHalo = true;
-      });
-      await prefs.setBool('scanner_halo_shown', true);
-      Future.delayed(const Duration(seconds: 6), () {
-        if (mounted) {
-          setState(() {
-            _showScannerHalo = false;
-          });
-        }
-      });
-    }
-  }
+
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -293,38 +264,7 @@ class NutritionDashboardScreenV2State extends State<NutritionDashboardScreenV2>
         title: const Text('Tableau de bord nutritionnel'),
         backgroundColor: FreshTheme.primaryMint,
         automaticallyImplyLeading: false,
-        actions: [
-          AnimatedBuilder(
-            animation: _scannerHalo,
-            builder: (context, child) {
-              final show = _showScannerHalo;
-              return Container(
-                decoration: show
-                    ? BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white
-                                .withOpacity(0.35 * _scannerHalo.value),
-                            blurRadius: 12 + 12 * _scannerHalo.value,
-                            spreadRadius: 2 + 2 * _scannerHalo.value,
-                          ),
-                        ],
-                      )
-                    : null,
-                child: BounceTap(
-                  onTap: () => Navigator.of(context).pushNamed('/scanner'),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Icon(Icons.qr_code_scanner_rounded,
-                        color: Colors.white),
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 4),
-        ],
+        actions: const [],
       ),
       body: BlocBuilder<UserProfileBloc, UserProfileState>(
         builder: (context, state) {
