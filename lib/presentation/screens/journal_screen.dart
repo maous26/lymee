@@ -230,46 +230,89 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
-  Future<void> _viewRecipe(_Meal meal) async {
-    final service = NutritionChatService();
+  /// Sauvegarde la recette générée dans le stockage local
+  Future<void> _saveRecipeToStorage(_Meal meal) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dateKey = _selected.toIso8601String().split('T').first;
+      final journalKey = 'journal_$dateKey';
+      
+      // Récupérer les données actuelles du journal
+      final existingData = prefs.getString(journalKey);
+      if (existingData != null) {
+        final journalData = jsonDecode(existingData) as Map<String, dynamic>;
+        final meals = List<Map<String, dynamic>>.from(journalData['meals'] ?? []);
+        
+        // Trouver et mettre à jour le repas correspondant
+        for (int i = 0; i < meals.length; i++) {
+          final mealData = meals[i];
+          if (mealData['name'] == meal.name && 
+              mealData['calories'] == meal.calories &&
+              mealData['protein'] == meal.protein) {
+            mealData['recipe'] = meal.recipe;
+            break;
+          }
+        }
+        
+        // Sauvegarder les données mises à jour
+        journalData['meals'] = meals;
+        await prefs.setString(journalKey, jsonEncode(journalData));
+      }
+    } catch (e) {
+      print('Erreur lors de la sauvegarde de la recette: $e');
+    }
+  }
 
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Recherche de la recette...'),
-              ],
+  Future<void> _viewRecipe(_Meal meal) async {
+    String? recipe = meal.recipe;
+
+    // Si la recette n'existe pas encore, la générer
+    if (recipe == null || recipe.isEmpty) {
+      final service = NutritionChatService();
+
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Génération de la recette...'),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    String? recipe;
+      try {
+        // Générer une nouvelle recette
+        final prompt = 'Recette détaillée en français pour ${meal.name}. '
+            'Objectif ~${meal.calories} kcal, ${meal.protein}g protéines, '
+            '${meal.carbs}g glucides, ${meal.fat}g lipides. '
+            'Format: **Ingrédients:** (quantités précises), **Instructions:** (étapes numérotées), **Conseils:** (optionnel).';
+        recipe = await service.getAnswer([
+          {'role': 'user', 'content': prompt}
+        ]);
 
-    try {
-      // Sonar-only: request a detailed recipe
-      final prompt = 'Recette détaillée en français pour ${meal.name}. '
-          'Objectif ~${meal.calories} kcal, ${meal.protein}g protéines, '
-          '${meal.carbs}g glucides, ${meal.fat}g lipides. '
-          'Format: **Ingrédients:** (quantités précises), **Instructions:** (étapes numérotées), **Conseils:** (optionnel).';
-      recipe = await service.getAnswer([
-        {'role': 'user', 'content': prompt}
-      ]);
-    } catch (e) {
-      recipe = 'Erreur lors du chargement de la recette: $e';
+        // Sauvegarder la recette dans le cache du meal
+        meal.recipe = recipe;
+        await _saveRecipeToStorage(meal);
+      } catch (e) {
+        recipe = 'Erreur lors du chargement de la recette: $e';
+      }
+
+      // Close loading dialog
+      if (!mounted) return;
+      Navigator.of(context).pop();
     }
 
-    // Close loading dialog
     // Show recipe dialog
     if (!mounted) return;
     showDialog(
@@ -1635,8 +1678,9 @@ class _Meal {
   final int protein;
   final int carbs;
   final int fat;
+  String? recipe; // Cache pour la recette générée
   _Meal(this.name, this.mealType, this.calories, this.protein, this.carbs,
-      this.fat);
+      this.fat, {this.recipe});
   factory _Meal.fromJson(Map<String, dynamic> json) => _Meal(
         json['name'] ?? json['mealType'] ?? 'Repas',
         json['mealType'],
@@ -1644,6 +1688,7 @@ class _Meal {
         (json['protein'] ?? 0).toInt(),
         (json['carbs'] ?? 0).toInt(),
         (json['fat'] ?? 0).toInt(),
+        recipe: json['recipe'],
       );
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -1652,6 +1697,7 @@ class _Meal {
         'protein': protein,
         'carbs': carbs,
         'fat': fat,
+        'recipe': recipe,
       };
 }
 
