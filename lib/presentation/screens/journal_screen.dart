@@ -7,6 +7,7 @@ import 'package:lym_nutrition/domain/entities/gamification_models.dart';
 import 'package:lym_nutrition/presentation/screens/chat/nutrition_chat_service.dart';
 import 'package:lym_nutrition/presentation/screens/food_search_screen.dart';
 import 'package:lym_nutrition/presentation/screens/meal_planning_screen.dart';
+import 'package:lym_nutrition/presentation/screens/recipe/create_recipe_screen.dart';
 import 'package:lym_nutrition/presentation/widgets/recipe_rating_widget.dart';
 import 'package:lym_nutrition/presentation/widgets/workout_rating_widget.dart';
 import 'package:lym_nutrition/core/services/favorites_service.dart';
@@ -840,6 +841,49 @@ class _JournalScreenState extends State<JournalScreen> {
                     },
                     icon: const Icon(Icons.auto_awesome),
                     label: const Text('Planifier la semaine'),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Section "Créer une recette"
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.menu_book, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Créer une recette',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                    "Partagez votre créativité culinaire avec la communauté. Utilisez la reconnaissance vocale pour décrire votre recette et générez une image appétissante."),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CreateRecipeScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add_circle),
+                    label: const Text('Créer une recette'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 )
               ],
