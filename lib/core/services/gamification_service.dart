@@ -94,6 +94,12 @@ class GamificationService {
         return 25;
       case LymAction.commentUser:
         return 10;
+      case LymAction.recipeCreated:
+        return 50; // Grosse récompense pour créer une recette
+      case LymAction.recipeRated:
+        return 15; // Récompense pour noter une recette
+      case LymAction.recipeCommented:
+        return 20; // Récompense pour commenter une recette
       case LymAction.receiveLike:
         return 5;
       case LymAction.inviteFriend:

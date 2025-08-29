@@ -238,24 +238,25 @@ class _JournalScreenState extends State<JournalScreen> {
       final prefs = await SharedPreferences.getInstance();
       final dateKey = _selected.toIso8601String().split('T').first;
       final journalKey = 'journal_$dateKey';
-      
+
       // Récupérer les données actuelles du journal
       final existingData = prefs.getString(journalKey);
       if (existingData != null) {
         final journalData = jsonDecode(existingData) as Map<String, dynamic>;
-        final meals = List<Map<String, dynamic>>.from(journalData['meals'] ?? []);
-        
+        final meals =
+            List<Map<String, dynamic>>.from(journalData['meals'] ?? []);
+
         // Trouver et mettre à jour le repas correspondant
         for (int i = 0; i < meals.length; i++) {
           final mealData = meals[i];
-          if (mealData['name'] == meal.name && 
+          if (mealData['name'] == meal.name &&
               mealData['calories'] == meal.calories &&
               mealData['protein'] == meal.protein) {
             mealData['recipe'] = meal.recipe;
             break;
           }
         }
-        
+
         // Sauvegarder les données mises à jour
         journalData['meals'] = meals;
         await prefs.setString(journalKey, jsonEncode(journalData));
@@ -270,7 +271,8 @@ class _JournalScreenState extends State<JournalScreen> {
     try {
       final favorites = await FavoritesService.getFavorites();
       final recipeId = 'recipe_${meal.name.replaceAll(' ', '_').toLowerCase()}';
-      return favorites.any((item) => item.id == recipeId && item.source == 'recipe');
+      return favorites
+          .any((item) => item.id == recipeId && item.source == 'recipe');
     } catch (e) {
       return false;
     }
@@ -279,7 +281,7 @@ class _JournalScreenState extends State<JournalScreen> {
   /// Basculer l'état favori d'un repas
   Future<void> _toggleMealFavorites(_Meal meal) async {
     final isFavorite = await _isMealInFavorites(meal);
-    
+
     if (isFavorite) {
       // Retirer des favoris
       await _removeMealFromFavorites(meal);
@@ -287,7 +289,7 @@ class _JournalScreenState extends State<JournalScreen> {
       // Ajouter aux favoris
       await _addMealToFavorites(meal);
     }
-    
+
     // Forcer le rebuild pour mettre à jour l'icône
     setState(() {});
   }
@@ -301,9 +303,9 @@ class _JournalScreenState extends State<JournalScreen> {
         (item) => item.id == recipeId && item.source == 'recipe',
         orElse: () => throw Exception('Repas non trouvé dans les favoris'),
       );
-      
+
       await FavoritesService.removeFromFavorites(mealToRemove);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -338,7 +340,7 @@ class _JournalScreenState extends State<JournalScreen> {
             'Objectif ~${meal.calories} kcal, ${meal.protein}g protéines, '
             '${meal.carbs}g glucides, ${meal.fat}g lipides. '
             'Format: **Ingrédients:** (quantités précises), **Instructions:** (étapes numérotées), **Conseils:** (optionnel).';
-        
+
         try {
           recipeContent = await service.getAnswer([
             {'role': 'user', 'content': prompt}
@@ -503,7 +505,8 @@ class _JournalScreenState extends State<JournalScreen> {
                       // Bouton Favoris
                       ElevatedButton.icon(
                         onPressed: () async {
-                          final success = await FavoritesService.addRecipeToFavorites(
+                          final success =
+                              await FavoritesService.addRecipeToFavorites(
                             recipeName: meal.name,
                             recipeContent: recipe ?? '',
                             calories: meal.calories.toDouble(),
@@ -511,15 +514,15 @@ class _JournalScreenState extends State<JournalScreen> {
                             carbs: meal.carbs.toDouble(),
                             fats: meal.fat.toDouble(),
                           );
-                          
+
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(success 
+                                content: Text(success
                                     ? '${meal.name} ajoutée aux favoris'
                                     : 'Déjà en favoris'),
-                                backgroundColor: success 
-                                    ? FreshTheme.primaryMint 
+                                backgroundColor: success
+                                    ? FreshTheme.primaryMint
                                     : Colors.orange,
                                 duration: const Duration(seconds: 2),
                               ),
@@ -533,7 +536,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           foregroundColor: Colors.white,
                         ),
                       ),
-                      
+
                       // Bouton Fermer
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
@@ -730,20 +733,25 @@ class _JournalScreenState extends State<JournalScreen> {
                                   style: TextStyle(fontSize: 12)),
                             ),
                             FutureBuilder<bool>(
-                              future: _isMealInFavorites(m),
-                              builder: (context, snapshot) {
-                                final isFavorite = snapshot.data ?? false;
-                                return IconButton(
-                                  icon: Icon(
-                                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                                    color: isFavorite ? Colors.red : FreshTheme.primaryMint,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _toggleMealFavorites(m),
-                                  tooltip: isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
-                                );
-                              }
-                            ),
+                                future: _isMealInFavorites(m),
+                                builder: (context, snapshot) {
+                                  final isFavorite = snapshot.data ?? false;
+                                  return IconButton(
+                                    icon: Icon(
+                                      isFavorite
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isFavorite
+                                          ? Colors.red
+                                          : FreshTheme.primaryMint,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => _toggleMealFavorites(m),
+                                    tooltip: isFavorite
+                                        ? 'Retirer des favoris'
+                                        : 'Ajouter aux favoris',
+                                  );
+                                }),
                             IconButton(
                               icon: const Icon(Icons.delete_outline,
                                   color: Colors.red, size: 20),
@@ -1900,7 +1908,8 @@ class _Meal {
   final int fat;
   String? recipe; // Cache pour la recette générée
   _Meal(this.name, this.mealType, this.calories, this.protein, this.carbs,
-      this.fat, {this.recipe});
+      this.fat,
+      {this.recipe});
   factory _Meal.fromJson(Map<String, dynamic> json) => _Meal(
         json['name'] ?? json['mealType'] ?? 'Repas',
         json['mealType'],
@@ -1994,7 +2003,8 @@ class _HydrationTrackerState extends State<_HydrationTracker> {
 
     // Check if this is the first hydration for today
     final previousHydration = prefs.getInt(waterKey) ?? 0;
-    final isFirstHydration = previousHydration == 0 && _ml > 0 && dateKey == today;
+    final isFirstHydration =
+        previousHydration == 0 && _ml > 0 && dateKey == today;
 
     // Save to legacy water_ key for backward compatibility
     await prefs.setInt(waterKey, _ml);
@@ -2005,12 +2015,15 @@ class _HydrationTrackerState extends State<_HydrationTracker> {
     // Award Lyms for first hydration of the day
     if (isFirstHydration) {
       try {
-        final lymsEarned = await _gamificationService.awardLyms(LymAction.hydration);
+        final lymsEarned =
+            await _gamificationService.awardLyms(LymAction.hydration);
         if (lymsEarned > 0) {
-          _showLymsReward('+${lymsEarned} 💎', 'Première hydratation de la journée !');
+          _showLymsReward(
+              '+${lymsEarned} 💎', 'Première hydratation de la journée !');
         }
       } catch (e) {
-        print('Erreur lors de l\'attribution des Lyms pour la première hydratation: $e');
+        print(
+            'Erreur lors de l\'attribution des Lyms pour la première hydratation: $e');
       }
     }
   }

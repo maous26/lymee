@@ -3,6 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lym_nutrition/core/services/speech_to_text_service.dart';
 import 'package:lym_nutrition/core/services/image_generation_service.dart';
 import 'package:lym_nutrition/core/services/gamification_service.dart';
+import 'package:lym_nutrition/domain/entities/gamification_models.dart';
+import 'package:lym_nutrition/domain/entities/community_recipe.dart';
+import 'package:lym_nutrition/presentation/screens/recipe/community_recipes_service.dart';
 import 'package:lym_nutrition/presentation/themes/fresh_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -22,7 +25,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
 
   // Controllers
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _transcriptionController = TextEditingController();
+  final TextEditingController _transcriptionController =
+      TextEditingController();
 
   // Animation controllers
   late AnimationController _pulseController;
@@ -138,14 +142,17 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
             controller: _nameController,
             decoration: InputDecoration(
               hintText: 'Ex: Salade de quinoa aux légumes grillés',
-              prefixIcon: const Icon(Icons.restaurant_menu, color: FreshTheme.primaryMint),
+              prefixIcon: const Icon(Icons.restaurant_menu,
+                  color: FreshTheme.primaryMint),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: FreshTheme.primaryMint.withOpacity(0.3)),
+                borderSide:
+                    BorderSide(color: FreshTheme.primaryMint.withOpacity(0.3)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: FreshTheme.primaryMint, width: 2),
+                borderSide:
+                    const BorderSide(color: FreshTheme.primaryMint, width: 2),
               ),
               filled: true,
               fillColor: Colors.white,
@@ -158,15 +165,19 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _nameController.text.trim().isEmpty ? null : () => _nextStep(),
+              onPressed: _nameController.text.trim().isEmpty
+                  ? null
+                  : () => _nextStep(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: FreshTheme.primaryMint,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
-              child: const Text('Continuer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: const Text('Continuer',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
           ).animate(delay: 600.ms).fadeIn().slideY(),
         ],
@@ -207,7 +218,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                 color: _isListening ? Colors.red : FreshTheme.primaryMint,
                 boxShadow: [
                   BoxShadow(
-                    color: (_isListening ? Colors.red : FreshTheme.primaryMint).withOpacity(0.3),
+                    color: (_isListening ? Colors.red : FreshTheme.primaryMint)
+                        .withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: _isListening ? 10 : 5,
                   ),
@@ -218,13 +230,16 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                 size: 50,
                 color: Colors.white,
               ),
-            ).animate(
-              onPlay: (controller) => _isListening ? controller.repeat() : controller.stop(),
-            ).scale(
-              duration: 1000.ms,
-              begin: const Offset(1, 1),
-              end: const Offset(1.1, 1.1),
-            ),
+            )
+                .animate(
+                  onPlay: (controller) =>
+                      _isListening ? controller.repeat() : controller.stop(),
+                )
+                .scale(
+                  duration: 1000.ms,
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.1, 1.1),
+                ),
           ),
 
           const SizedBox(height: 24),
@@ -249,7 +264,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: FreshTheme.primaryMint.withOpacity(0.2)),
+                border:
+                    Border.all(color: FreshTheme.primaryMint.withOpacity(0.2)),
               ),
               child: SingleChildScrollView(
                 child: Text(
@@ -263,7 +279,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                     color: _transcription.isEmpty
                         ? FreshTheme.midnightGray.withOpacity(0.5)
                         : FreshTheme.midnightGray,
-                    fontStyle: _transcription.isEmpty ? FontStyle.italic : FontStyle.normal,
+                    fontStyle: _transcription.isEmpty
+                        ? FontStyle.italic
+                        : FontStyle.normal,
                   ),
                 ),
               ),
@@ -282,7 +300,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                     foregroundColor: FreshTheme.primaryMint,
                     side: const BorderSide(color: FreshTheme.primaryMint),
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   child: const Text('Retour'),
                 ),
@@ -295,7 +314,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                     backgroundColor: FreshTheme.primaryMint,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   child: const Text('Continuer'),
                 ),
@@ -333,7 +353,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                   margin: const EdgeInsets.only(right: 8),
                   child: Icon(
                     Icons.star,
-                    color: index < _difficulty ? Colors.amber : Colors.grey[300],
+                    color:
+                        index < _difficulty ? Colors.amber : Colors.grey[300],
                     size: 32,
                   ),
                 ),
@@ -344,7 +365,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
           const SizedBox(height: 32),
 
           // Temps de préparation
-          Text('Temps de préparation', style: Theme.of(context).textTheme.titleMedium),
+          Text('Temps de préparation',
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Slider(
             value: _preparationTime.toDouble(),
@@ -353,7 +375,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
             divisions: 35,
             activeColor: FreshTheme.primaryMint,
             label: '${_preparationTime} min',
-            onChanged: (value) => setState(() => _preparationTime = value.round()),
+            onChanged: (value) =>
+                setState(() => _preparationTime = value.round()),
           ),
           Text(
             '${_preparationTime} minutes',
@@ -363,7 +386,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
           const SizedBox(height: 32),
 
           // Transcription éditable
-          Text('Recette (éditable)', style: Theme.of(context).textTheme.titleMedium),
+          Text('Recette (éditable)',
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Expanded(
             child: TextField(
@@ -374,11 +398,13 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                 hintText: 'Modifiez ou complétez votre recette...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: FreshTheme.primaryMint.withOpacity(0.3)),
+                  borderSide: BorderSide(
+                      color: FreshTheme.primaryMint.withOpacity(0.3)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: FreshTheme.primaryMint, width: 2),
+                  borderSide:
+                      const BorderSide(color: FreshTheme.primaryMint, width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -400,7 +426,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                     foregroundColor: FreshTheme.primaryMint,
                     side: const BorderSide(color: FreshTheme.primaryMint),
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   child: const Text('Retour'),
                 ),
@@ -413,7 +440,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                     backgroundColor: FreshTheme.primaryMint,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   child: const Text('Générer image'),
                 ),
@@ -454,7 +482,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: FreshTheme.primaryMint.withOpacity(0.2)),
+                border:
+                    Border.all(color: FreshTheme.primaryMint.withOpacity(0.2)),
               ),
               child: _buildImageContent(),
             ),
@@ -473,7 +502,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                       foregroundColor: FreshTheme.primaryMint,
                       side: const BorderSide(color: FreshTheme.primaryMint),
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                     ),
                     child: const Text('Régénérer'),
                   ),
@@ -489,7 +519,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                       backgroundColor: FreshTheme.primaryMint,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                     ),
                     child: const Text('Valider'),
                   ),
@@ -506,7 +537,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                       foregroundColor: FreshTheme.primaryMint,
                       side: const BorderSide(color: FreshTheme.primaryMint),
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                     ),
                     child: const Text('Retour'),
                   ),
@@ -522,7 +554,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                       backgroundColor: FreshTheme.primaryMint,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                     ),
                     child: const Text('Continuer sans image'),
                   ),
@@ -545,7 +578,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
             SizedBox(height: 16),
             Text('Génération de l\'image en cours...'),
             SizedBox(height: 8),
-            Text('Cela peut prendre quelques secondes', style: TextStyle(fontSize: 12)),
+            Text('Cela peut prendre quelques secondes',
+                style: TextStyle(fontSize: 12)),
           ],
         ),
       );
@@ -557,7 +591,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
         child: CachedNetworkImage(
           imageUrl: _generatedImageUrl!,
           fit: BoxFit.cover,
-          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+          placeholder: (context, url) =>
+              const Center(child: CircularProgressIndicator()),
           errorWidget: (context, url, error) => const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -585,8 +620,145 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
   }
 
   Widget _buildPreviewStep() {
-    return const Center(
-      child: Text('Preview Step - À implémenter'),
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Aperçu de votre recette',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: FreshTheme.midnightGray,
+                ),
+          ).animate().fadeIn(),
+          const SizedBox(height: 24),
+
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image de la recette (si disponible)
+                  if (_generatedImageUrl != null)
+                    Container(
+                      width: double.infinity,
+                      height: 200,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        image: DecorationImage(
+                          image: NetworkImage(_generatedImageUrl!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+
+                  // Nom de la recette
+                  Text(
+                    _nameController.text,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: FreshTheme.midnightGray,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Informations (difficulté et temps)
+                  Row(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 20),
+                          const SizedBox(width: 4),
+                          Text('$_difficulty/5'),
+                        ],
+                      ),
+                      const SizedBox(width: 24),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time, color: FreshTheme.primaryMint, size: 20),
+                          const SizedBox(width: 4),
+                          Text('$_preparationTime min'),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Description de la recette
+                  Text(
+                    'Description',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: FreshTheme.primaryMint.withOpacity(0.2)),
+                    ),
+                    child: Text(
+                      _transcriptionController.text.isEmpty
+                          ? _transcription
+                          : _transcriptionController.text,
+                      style: const TextStyle(height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Boutons d'action
+          if (_isPublishing)
+            const Center(
+              child: Column(
+                children: [
+                  CircularProgressIndicator(color: FreshTheme.primaryMint),
+                  SizedBox(height: 16),
+                  Text('Publication en cours...'),
+                ],
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _previousStep(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: FreshTheme.primaryMint,
+                      side: const BorderSide(color: FreshTheme.primaryMint),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text('Retour'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _publishRecipe,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: FreshTheme.primaryMint,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text('Publier la recette'),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 
@@ -641,13 +813,13 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
   void _startListeningTimer() {
     Future.doWhile(() async {
       if (!_isListening) return false;
-      
+
       await Future.delayed(const Duration(seconds: 1));
       if (_isListening) {
         setState(() {
           _listeningDuration = _listeningDuration + const Duration(seconds: 1);
         });
-        
+
         if (_listeningDuration >= _maxListeningDuration) {
           await _stopListening();
           return false;
@@ -693,5 +865,71 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
     // Logique simple pour extraire les ingrédients
     // À améliorer avec de l'IA pour une meilleure extraction
     return transcription.split('.').first;
+  }
+
+  // Méthode de publication
+  Future<void> _publishRecipe() async {
+    setState(() => _isPublishing = true);
+
+    try {
+      // Obtenir les informations utilisateur
+      final userId = await CommunityRecipesService.getCurrentUserId();
+      final userName = await CommunityRecipesService.getCurrentUserName();
+
+      // Créer la recette
+      final recipe = CommunityRecipe(
+        id: CommunityRecipesService.generateRecipeId(),
+        name: _nameController.text.trim(),
+        ingredients: _extractIngredients(_transcription),
+        instructions: _transcriptionController.text.isEmpty 
+            ? _transcription 
+            : _transcriptionController.text,
+        authorId: userId,
+        authorName: userName,
+        difficulty: _difficulty,
+        preparationTime: _preparationTime,
+        imageUrl: _generatedImageUrl,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Sauvegarder la recette
+      final success = await CommunityRecipesService.saveRecipe(recipe);
+
+      if (success) {
+        // Récompenser l'utilisateur avec des Lyms
+        await _gamificationService.awardLyms(LymAction.recipeCreated);
+
+        if (mounted) {
+          // Afficher message de succès
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🎉 Recette publiée avec succès !'),
+              backgroundColor: FreshTheme.primaryMint,
+              duration: Duration(seconds: 3),
+            ),
+          );
+
+          // Retourner à l'écran précédent
+          Navigator.of(context).pop();
+        }
+      } else {
+        throw Exception('Erreur lors de la sauvegarde');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur lors de la publication: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPublishing = false);
+      }
+    }
   }
 }

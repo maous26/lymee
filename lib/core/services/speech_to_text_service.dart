@@ -81,7 +81,7 @@ class SpeechToTextService {
           listenMode: stt.ListenMode.confirmation,
         ),
       );
-      
+
       _isListening = true;
       debugPrint('🎤 Écoute démarrée');
     } catch (e) {

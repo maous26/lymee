@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Cette app utilise le microphone pour enregistrer les descriptions de recettes via reconnaissance vocale.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Cette app utilise la reconnaissance vocale pour transcrire vos descriptions de recettes.</string>
 </dict>
 </plist>

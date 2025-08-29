@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ImageGenerationService {
-  static final ImageGenerationService _instance = ImageGenerationService._internal();
+  static final ImageGenerationService _instance =
+      ImageGenerationService._internal();
   factory ImageGenerationService() => _instance;
   ImageGenerationService._internal();
 
@@ -24,8 +25,9 @@ class ImageGenerationService {
       }
 
       // Construire le prompt optimisé pour la génération d'images de recettes
-      final prompt = _buildRecipeImagePrompt(recipeName, ingredients, description);
-      
+      final prompt =
+          _buildRecipeImagePrompt(recipeName, ingredients, description);
+
       debugPrint('🎨 Génération image pour: $recipeName');
 
       final response = await http.post(
@@ -47,7 +49,7 @@ class ImageGenerationService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final imageUrl = data['data'][0]['url'] as String;
-        
+
         debugPrint('✅ Image générée: $imageUrl');
         return imageUrl;
       } else {
@@ -62,7 +64,8 @@ class ImageGenerationService {
   }
 
   /// Construit un prompt optimisé pour la génération d'images de recettes
-  String _buildRecipeImagePrompt(String recipeName, String ingredients, String description) {
+  String _buildRecipeImagePrompt(
+      String recipeName, String ingredients, String description) {
     return '''
 Create a professional, appetizing food photography image of "$recipeName".
 
@@ -83,7 +86,8 @@ Style requirements:
 - No text or watermarks
 
 The image should look like it belongs in a premium cookbook or food magazine, showcasing the dish in its most appetizing form.
-'''.trim();
+'''
+        .trim();
   }
 
   /// Génère une image alternative avec un style différent
@@ -100,7 +104,7 @@ The image should look like it belongs in a premium cookbook or food magazine, sh
       }
 
       final prompt = _buildAlternativePrompt(recipeName, ingredients, style);
-      
+
       final response = await http.post(
         Uri.parse(_baseUrl),
         headers: {
@@ -128,12 +132,15 @@ The image should look like it belongs in a premium cookbook or food magazine, sh
     }
   }
 
-  String _buildAlternativePrompt(String recipeName, String ingredients, String style) {
+  String _buildAlternativePrompt(
+      String recipeName, String ingredients, String style) {
     final styleDescriptions = {
       'rustic': 'rustic, homestyle cooking, wooden table, natural textures',
-      'elegant': 'elegant fine dining, sophisticated plating, luxury restaurant',
+      'elegant':
+          'elegant fine dining, sophisticated plating, luxury restaurant',
       'casual': 'casual dining, comfort food, cozy kitchen atmosphere',
-      'artistic': 'artistic food styling, creative presentation, modern gastronomy',
+      'artistic':
+          'artistic food styling, creative presentation, modern gastronomy',
     };
 
     final styleDesc = styleDescriptions[style] ?? styleDescriptions['rustic']!;
@@ -145,6 +152,7 @@ Ingredients: $ingredients
 
 Create a beautiful, appetizing image that captures the essence of this dish in a $style setting.
 Professional food photography, natural lighting, no text overlays.
-'''.trim();
+'''
+        .trim();
   }
 }

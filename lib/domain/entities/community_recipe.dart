@@ -20,7 +20,7 @@ class CommunityRecipe extends Equatable {
   final List<RecipeComment> comments;
   final bool isPublic;
   final List<String> tags;
-  
+
   // Informations nutritionnelles estimées
   final double? estimatedCalories;
   final double? estimatedProteins;
@@ -258,7 +258,8 @@ class RecipeComment extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, userId, userName, content, createdAt, likesCount, likedByUsers];
+  List<Object?> get props =>
+      [id, userId, userName, content, createdAt, likesCount, likedByUsers];
 
   Map<String, dynamic> toJson() {
     return {
@@ -280,7 +281,8 @@ class RecipeComment extends Equatable {
       content: json['content'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       likesCount: json['likesCount'] as int? ?? 0,
-      likedByUsers: (json['likedByUsers'] as List<dynamic>?)?.cast<String>() ?? [],
+      likedByUsers:
+          (json['likedByUsers'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 

@@ -13,9 +13,9 @@ class CommunityRecipesService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final recipesJson = prefs.getString(_recipesKey);
-      
+
       if (recipesJson == null) return [];
-      
+
       final List<dynamic> recipesList = jsonDecode(recipesJson);
       return recipesList
           .map((json) => CommunityRecipe.fromJson(json as Map<String, dynamic>))
@@ -31,10 +31,10 @@ class CommunityRecipesService {
     try {
       final recipes = await getAllRecipes();
       recipes.add(recipe);
-      
+
       final prefs = await SharedPreferences.getInstance();
       final recipesJson = jsonEncode(recipes.map((r) => r.toJson()).toList());
-      
+
       await prefs.setString(_recipesKey, recipesJson);
       debugPrint('✅ Recette sauvegardée: ${recipe.name}');
       return true;
@@ -49,14 +49,14 @@ class CommunityRecipesService {
     try {
       final recipes = await getAllRecipes();
       final index = recipes.indexWhere((r) => r.id == updatedRecipe.id);
-      
+
       if (index == -1) return false;
-      
+
       recipes[index] = updatedRecipe;
-      
+
       final prefs = await SharedPreferences.getInstance();
       final recipesJson = jsonEncode(recipes.map((r) => r.toJson()).toList());
-      
+
       await prefs.setString(_recipesKey, recipesJson);
       debugPrint('✅ Recette mise à jour: ${updatedRecipe.name}');
       return true;
@@ -71,10 +71,10 @@ class CommunityRecipesService {
     try {
       final recipes = await getAllRecipes();
       recipes.removeWhere((r) => r.id == recipeId);
-      
+
       final prefs = await SharedPreferences.getInstance();
       final recipesJson = jsonEncode(recipes.map((r) => r.toJson()).toList());
-      
+
       await prefs.setString(_recipesKey, recipesJson);
       debugPrint('✅ Recette supprimée: $recipeId');
       return true;
@@ -115,7 +115,8 @@ class CommunityRecipesService {
       // Recalculer la moyenne
       final averageRating = updatedRatings.isEmpty
           ? 0.0
-          : updatedRatings.map((r) => r.rating).reduce((a, b) => a + b) / updatedRatings.length;
+          : updatedRatings.map((r) => r.rating).reduce((a, b) => a + b) /
+              updatedRatings.length;
 
       final updatedRecipe = recipe.copyWith(
         ratings: updatedRatings,
@@ -160,22 +161,25 @@ class CommunityRecipesService {
 
       // Pour simplicité, on stocke les likes dans les tags temporairement
       // Dans une vraie app, on aurait une structure séparée
-      final likedByUsers = recipe.tags.where((tag) => tag.startsWith('liked_by:')).toList();
+      final likedByUsers =
+          recipe.tags.where((tag) => tag.startsWith('liked_by:')).toList();
       final userLikeTag = 'liked_by:$userId';
-      
+
       int newLikesCount = recipe.likesCount;
-      List<String> newTags = recipe.tags.where((tag) => !tag.startsWith('liked_by:')).toList();
-      
+      List<String> newTags =
+          recipe.tags.where((tag) => !tag.startsWith('liked_by:')).toList();
+
       if (likedByUsers.contains(userLikeTag)) {
         // Unlike
-        newLikesCount = (recipe.likesCount - 1).clamp(0, double.infinity).toInt();
+        newLikesCount =
+            (recipe.likesCount - 1).clamp(0, double.infinity).toInt();
         likedByUsers.remove(userLikeTag);
       } else {
         // Like
         newLikesCount = recipe.likesCount + 1;
         likedByUsers.add(userLikeTag);
       }
-      
+
       newTags.addAll(likedByUsers);
 
       final updatedRecipe = recipe.copyWith(
@@ -192,7 +196,8 @@ class CommunityRecipesService {
   }
 
   /// Like/Unlike un commentaire
-  static Future<bool> toggleCommentLike(String recipeId, String commentId, String userId) async {
+  static Future<bool> toggleCommentLike(
+      String recipeId, String commentId, String userId) async {
     try {
       final recipe = await getRecipeById(recipeId);
       if (recipe == null) return false;
@@ -234,13 +239,13 @@ class CommunityRecipesService {
   static Future<String> getCurrentUserId() async {
     final prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString(_userIdKey);
-    
+
     if (userId == null) {
       // Générer un ID unique pour cet utilisateur
       userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
       await prefs.setString(_userIdKey, userId);
     }
-    
+
     return userId;
   }
 
@@ -248,13 +253,13 @@ class CommunityRecipesService {
   static Future<String> getCurrentUserName() async {
     final prefs = await SharedPreferences.getInstance();
     String? userName = prefs.getString(_userNameKey);
-    
+
     if (userName == null) {
       // Nom par défaut
       userName = 'Utilisateur';
       await prefs.setString(_userNameKey, userName);
     }
-    
+
     return userName;
   }
 
@@ -269,8 +274,10 @@ class CommunityRecipesService {
     final recipes = await getAllRecipes();
     recipes.sort((a, b) {
       // Trier par score de popularité (likes + commentaires + notes)
-      final scoreA = a.likesCount + a.commentsCount + (a.averageRating * 2).round();
-      final scoreB = b.likesCount + b.commentsCount + (b.averageRating * 2).round();
+      final scoreA =
+          a.likesCount + a.commentsCount + (a.averageRating * 2).round();
+      final scoreB =
+          b.likesCount + b.commentsCount + (b.averageRating * 2).round();
       return scoreB.compareTo(scoreA);
     });
     return recipes;
@@ -287,12 +294,12 @@ class CommunityRecipesService {
   static Future<List<CommunityRecipe>> searchRecipes(String query) async {
     final recipes = await getAllRecipes();
     final lowercaseQuery = query.toLowerCase();
-    
+
     return recipes.where((recipe) {
       return recipe.name.toLowerCase().contains(lowercaseQuery) ||
-             recipe.ingredients.toLowerCase().contains(lowercaseQuery) ||
-             recipe.instructions.toLowerCase().contains(lowercaseQuery) ||
-             recipe.tags.any((tag) => tag.toLowerCase().contains(lowercaseQuery));
+          recipe.ingredients.toLowerCase().contains(lowercaseQuery) ||
+          recipe.instructions.toLowerCase().contains(lowercaseQuery) ||
+          recipe.tags.any((tag) => tag.toLowerCase().contains(lowercaseQuery));
     }).toList();
   }
 
@@ -300,7 +307,7 @@ class CommunityRecipesService {
   static Future<bool> hasUserLikedRecipe(String recipeId, String userId) async {
     final recipe = await getRecipeById(recipeId);
     if (recipe == null) return false;
-    
+
     return recipe.tags.contains('liked_by:$userId');
   }
 
