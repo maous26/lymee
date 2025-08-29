@@ -9,6 +9,7 @@ import 'package:lym_nutrition/presentation/screens/food_search_screen.dart';
 import 'package:lym_nutrition/presentation/screens/meal_planning_screen.dart';
 import 'package:lym_nutrition/presentation/widgets/recipe_rating_widget.dart';
 import 'package:lym_nutrition/presentation/widgets/workout_rating_widget.dart';
+import 'package:lym_nutrition/core/services/favorites_service.dart';
 // main_app_shell import non utilisé supprimé
 
 class JournalScreen extends StatefulWidget {
@@ -371,8 +372,43 @@ class _JournalScreenState extends State<JournalScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Bouton Favoris
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final success = await FavoritesService.addRecipeToFavorites(
+                            recipeName: meal.name,
+                            recipeContent: recipe ?? '',
+                            calories: meal.calories.toDouble(),
+                            proteins: meal.protein.toDouble(),
+                            carbs: meal.carbs.toDouble(),
+                            fats: meal.fat.toDouble(),
+                          );
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(success 
+                                    ? '${meal.name} ajoutée aux favoris'
+                                    : 'Déjà en favoris'),
+                                backgroundColor: success 
+                                    ? FreshTheme.primaryMint 
+                                    : Colors.orange,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.favorite_border),
+                        label: const Text('Favoris'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: FreshTheme.primaryMint,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      
+                      // Bouton Fermer
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         child: const Text('Fermer'),

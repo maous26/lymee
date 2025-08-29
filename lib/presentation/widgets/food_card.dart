@@ -9,20 +9,26 @@ class FoodCard extends StatelessWidget {
   final FoodItem food;
   final VoidCallback onTap;
   final bool isHistoryItem;
+  final bool isFavoriteItem;
   final bool showNutritionScore;
   final bool showCalories;
   final bool showCategory;
   final bool showBrand;
+  final bool showFavoriteButton;
+  final VoidCallback? onFavoriteToggle;
 
   const FoodCard({
     Key? key,
     required this.food,
     required this.onTap,
     this.isHistoryItem = false,
+    this.isFavoriteItem = false,
     this.showNutritionScore = true,
     this.showCalories = true,
     this.showCategory = true,
     this.showBrand = true,
+    this.showFavoriteButton = false,
+    this.onFavoriteToggle,
   }) : super(key: key);
 
   @override
@@ -145,6 +151,40 @@ class FoodCard extends StatelessWidget {
                     Icons.history,
                     size: 16,
                     color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
+
+              // Indicateur favori
+              if (isFavoriteItem)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.favorite,
+                    size: 16,
+                    color: Colors.red.withOpacity(0.7),
+                  ),
+                ),
+
+              // Bouton favori
+              if (showFavoriteButton && onFavoriteToggle != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: GestureDetector(
+                    onTap: onFavoriteToggle,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isFavoriteItem 
+                            ? Colors.red.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1),
+                      ),
+                      child: Icon(
+                        isFavoriteItem ? Icons.favorite : Icons.favorite_border,
+                        size: 18,
+                        color: isFavoriteItem ? Colors.red : Colors.grey,
+                      ),
+                    ),
                   ),
                 ),
             ],

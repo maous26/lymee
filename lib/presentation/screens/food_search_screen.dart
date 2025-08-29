@@ -19,6 +19,7 @@ import 'package:lym_nutrition/presentation/widgets/empty_results.dart';
 import 'package:lym_nutrition/presentation/widgets/food_card.dart';
 import 'package:lym_nutrition/presentation/widgets/shimmer_food_card.dart';
 import 'package:lym_nutrition/core/util/ciqual_cache_manager.dart';
+import 'package:lym_nutrition/core/services/favorites_service.dart';
 
 class FoodSearchScreen extends StatefulWidget {
   final DateTime? targetDate;
@@ -28,7 +29,8 @@ class FoodSearchScreen extends StatefulWidget {
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
 }
 
-class _FoodSearchScreenState extends State<FoodSearchScreen> {
+class _FoodSearchScreenState extends State<FoodSearchScreen> 
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _brandController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -38,11 +40,17 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   String _currentQuery = '';
   String _currentBrand = '';
   late GamificationService _gamificationService;
+  
+  // Onglets pour historique et favoris
+  late TabController _tabController;
+  List<FoodItem> _favoritesFoods = [];
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _initGamification();
+    _loadFavorites();
     // Charger l'historique au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<FoodSearchBloc>().add(GetFoodHistoryEvent());
@@ -54,12 +62,53 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     _gamificationService = GamificationService(prefs);
   }
 
+  /// Charge la liste des favoris
+  Future<void> _loadFavorites() async {
+    final favorites = await FavoritesService.getFavorites();
+    setState(() {
+      _favoritesFoods = favorites;
+    });
+  }
+
+  /// Ajoute/retire un aliment des favoris
+  Future<void> _toggleFavorite(FoodItem food) async {
+    final isFavorite = await FavoritesService.isFavorite(food);
+    
+    if (isFavorite) {
+      await FavoritesService.removeFromFavorites(food);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${food.name} retiré des favoris'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      await FavoritesService.addToFavorites(food);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${food.name} ajouté aux favoris'),
+            backgroundColor: FreshTheme.primaryMint,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+    
+    // Recharger les favoris
+    await _loadFavorites();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
     _brandController.dispose();
     _brandFocusNode.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -454,6 +503,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                               child: FoodCard(
                                 food: food,
                                 onTap: () => _navigateToFoodDetail(food),
+                                showFavoriteButton: true,
+                                onFavoriteToggle: () => _toggleFavorite(food),
                               ),
                             ),
                           ),
@@ -473,58 +524,113 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: 16,
-                            top: 16,
-                            bottom: 8,
+                        // Onglets
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: FreshTheme.cloudWhite,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: FreshTheme.primaryMint.withOpacity(0.2)),
                           ),
-                          child: Text(
-                            'Historique récent',
-                            style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: FreshTheme.midnightGray,
-                                    ) ??
-                                TextStyle(
-                                  // Ajout d'un fallback
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: FreshTheme.midnightGray,
-                                ),
+                          child: TabBar(
+                            controller: _tabController,
+                            labelColor: FreshTheme.primaryMint,
+                            unselectedLabelColor: FreshTheme.midnightGray.withOpacity(0.6),
+                            indicatorColor: FreshTheme.primaryMint,
+                            indicatorWeight: 3,
+                            tabs: const [
+                              Tab(
+                                text: 'Historique récent',
+                                icon: Icon(Icons.history, size: 20),
+                              ),
+                              Tab(
+                                text: 'Favoris',
+                                icon: Icon(Icons.favorite, size: 20),
+                              ),
+                            ],
                           ),
                         ),
+                        
+                        // Contenu des onglets
                         Expanded(
-                          child: ListView.builder(
-                            primary: false,
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.only(
-                              bottom: 24,
-                              left: 16,
-                              right: 16,
-                            ),
-                            itemCount: state.historyItems.length,
-                            itemBuilder: (context, index) {
-                              final food = state.historyItems[index];
-                              return AnimatedListItem(
-                                index: index,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: FoodCard(
-                                      food: food,
-                                      onTap: () => _navigateToFoodDetail(food),
-                                      isHistoryItem: true,
-                                    ),
-                                  ),
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              // Onglet Historique
+                              ListView.builder(
+                                primary: false,
+                                keyboardDismissBehavior:
+                                    ScrollViewKeyboardDismissBehavior.onDrag,
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.only(
+                                  top: 16,
+                                  bottom: 24,
+                                  left: 16,
+                                  right: 16,
                                 ),
-                              );
-                            },
+                                itemCount: state.historyItems.length,
+                                itemBuilder: (context, index) {
+                                  final food = state.historyItems[index];
+                                  return AnimatedListItem(
+                                    index: index,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: FoodCard(
+                                          food: food,
+                                          onTap: () => _navigateToFoodDetail(food),
+                                          isHistoryItem: true,
+                                          showFavoriteButton: true,
+                                          onFavoriteToggle: () => _toggleFavorite(food),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              
+                              // Onglet Favoris
+                              _favoritesFoods.isEmpty
+                                  ? const EmptyResults(
+                                      message: 'Aucun favori',
+                                      submessage: 'Ajoutez des aliments en favoris depuis la recherche',
+                                      icon: Icons.favorite_border,
+                                      color: FreshTheme.primaryMint,
+                                    )
+                                  : ListView.builder(
+                                      primary: false,
+                                      keyboardDismissBehavior:
+                                          ScrollViewKeyboardDismissBehavior.onDrag,
+                                      physics: const BouncingScrollPhysics(),
+                                      padding: const EdgeInsets.only(
+                                        top: 16,
+                                        bottom: 24,
+                                        left: 16,
+                                        right: 16,
+                                      ),
+                                      itemCount: _favoritesFoods.length,
+                                      itemBuilder: (context, index) {
+                                        final food = _favoritesFoods[index];
+                                        return AnimatedListItem(
+                                          index: index,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(bottom: 8),
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: FoodCard(
+                                                food: food,
+                                                onTap: () => _navigateToFoodDetail(food),
+                                                isFavoriteItem: true,
+                                                showFavoriteButton: true,
+                                                onFavoriteToggle: () => _toggleFavorite(food),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ],
                           ),
                         ),
                       ],
