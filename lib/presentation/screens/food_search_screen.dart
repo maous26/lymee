@@ -47,6 +47,10 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
   
   // Filtre pour favoris
   String _favoritesFilter = 'all'; // 'all', 'foods', 'recipes'
+  
+  // Recherche contextuelle dans les favoris
+  String _favoritesSearchQuery = '';
+  final TextEditingController _favoritesSearchController = TextEditingController();
 
   @override
   void initState() {
@@ -73,16 +77,48 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
     });
   }
 
-  /// Filtre les favoris selon le type
+  /// Filtre les favoris selon le type et la recherche
   List<FoodItem> get _filteredFavorites {
+    List<FoodItem> filtered;
+    
+    // Filtrer par type
     switch (_favoritesFilter) {
       case 'foods':
-        return _favoritesFoods.where((item) => item.source != 'recipe').toList();
+        filtered = _favoritesFoods.where((item) => item.source != 'recipe').toList();
+        break;
       case 'recipes':
-        return _favoritesFoods.where((item) => item.source == 'recipe').toList();
+        filtered = _favoritesFoods.where((item) => item.source == 'recipe').toList();
+        break;
       default:
-        return _favoritesFoods;
+        filtered = _favoritesFoods;
     }
+    
+    // Filtrer par recherche si query non vide
+    if (_favoritesSearchQuery.isNotEmpty) {
+      final query = _favoritesSearchQuery.toLowerCase();
+      filtered = filtered.where((item) {
+        return item.name.toLowerCase().contains(query) ||
+               item.category.toLowerCase().contains(query) ||
+               (item.brand?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+    
+    return filtered;
+  }
+
+  /// Effectue une recherche dans les favoris
+  void _performFavoritesSearch(String query) {
+    setState(() {
+      _favoritesSearchQuery = query;
+    });
+  }
+
+  /// Efface la recherche dans les favoris
+  void _clearFavoritesSearch() {
+    setState(() {
+      _favoritesSearchQuery = '';
+      _favoritesSearchController.clear();
+    });
   }
 
   /// Ajoute/retire un aliment des favoris
@@ -126,6 +162,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
     _brandController.dispose();
     _brandFocusNode.dispose();
     _tabController.dispose();
+    _favoritesSearchController.dispose();
     super.dispose();
   }
 
@@ -652,6 +689,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                                             onSelectionChanged: (Set<String> newSelection) {
                                               setState(() {
                                                 _favoritesFilter = newSelection.first;
+                                                // Effacer la recherche quand on change de filtre
+                                                _clearFavoritesSearch();
                                               });
                                             },
                                             style: SegmentedButton.styleFrom(
@@ -664,22 +703,60 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                                     ),
                                   ),
                                   
+                                  // Barre de recherche contextuelle dans les favoris
+                                  Container(
+                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    child: TextField(
+                                      controller: _favoritesSearchController,
+                                      decoration: InputDecoration(
+                                        hintText: _favoritesFilter == 'foods' 
+                                            ? 'Rechercher dans vos aliments favoris...'
+                                            : _favoritesFilter == 'recipes'
+                                                ? 'Rechercher dans vos recettes favorites...'
+                                                : 'Rechercher dans vos favoris...',
+                                        prefixIcon: const Icon(Icons.search),
+                                        suffixIcon: _favoritesSearchQuery.isNotEmpty
+                                            ? IconButton(
+                                                icon: const Icon(Icons.clear),
+                                                onPressed: _clearFavoritesSearch,
+                                              )
+                                            : null,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: FreshTheme.primaryMint.withOpacity(0.3)),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: FreshTheme.primaryMint, width: 2),
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      ),
+                                      onChanged: _performFavoritesSearch,
+                                    ),
+                                  ),
+                                  
                                   // Liste des favoris filtrés
                                   Expanded(
                                     child: _filteredFavorites.isEmpty
                                         ? EmptyResults(
-                                            message: _favoritesFilter == 'all' 
-                                                ? 'Aucun favori'
-                                                : _favoritesFilter == 'foods'
-                                                    ? 'Aucun aliment favori'
-                                                    : 'Aucune recette favorite',
-                                            submessage: _favoritesFilter == 'all'
-                                                ? 'Ajoutez des aliments ou recettes en favoris'
-                                                : _favoritesFilter == 'foods'
-                                                    ? 'Ajoutez des aliments en favoris depuis la recherche'
-                                                    : 'Ajoutez des recettes en favoris depuis le plan du jour',
-                                            icon: Icons.favorite_border,
+                                            message: _favoritesSearchQuery.isNotEmpty
+                                                ? 'Aucun résultat'
+                                                : _favoritesFilter == 'all' 
+                                                    ? 'Aucun favori'
+                                                    : _favoritesFilter == 'foods'
+                                                        ? 'Aucun aliment favori'
+                                                        : 'Aucune recette favorite',
+                                            submessage: _favoritesSearchQuery.isNotEmpty
+                                                ? 'Aucun favori ne correspond à "${_favoritesSearchQuery}"'
+                                                : _favoritesFilter == 'all'
+                                                    ? 'Ajoutez des aliments ou recettes en favoris'
+                                                    : _favoritesFilter == 'foods'
+                                                        ? 'Ajoutez des aliments en favoris depuis la recherche'
+                                                        : 'Ajoutez des recettes en favoris depuis le plan du jour',
+                                            icon: _favoritesSearchQuery.isNotEmpty ? Icons.search_off : Icons.favorite_border,
                                             color: FreshTheme.primaryMint,
+                                            actionLabel: _favoritesSearchQuery.isNotEmpty ? 'Effacer la recherche' : null,
+                                            onActionPressed: _favoritesSearchQuery.isNotEmpty ? _clearFavoritesSearch : null,
                                           )
                                         : ListView.builder(
                                             primary: false,
