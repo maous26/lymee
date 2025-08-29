@@ -154,18 +154,7 @@ class FoodCard extends StatelessWidget {
                   ),
                 ),
 
-              // Indicateur favori
-              if (isFavoriteItem)
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: Icon(
-                    Icons.favorite,
-                    size: 16,
-                    color: Colors.red.withOpacity(0.7),
-                  ),
-                ),
-
-              // Bouton favori
+              // Bouton favori (remplace l'indicateur pour éviter les doublons)
               if (showFavoriteButton && onFavoriteToggle != null)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),

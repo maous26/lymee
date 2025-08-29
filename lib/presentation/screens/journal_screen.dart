@@ -264,6 +264,70 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
+  /// Ajouter un repas aux favoris
+  Future<void> _addMealToFavorites(_Meal meal) async {
+    try {
+      // Générer la recette si elle n'existe pas
+      String? recipeContent = meal.recipe;
+      if (recipeContent == null || recipeContent.isEmpty) {
+        // Générer la recette en arrière-plan
+        final service = NutritionChatService();
+        final prompt = 'Recette détaillée en français pour ${meal.name}. '
+            'Objectif ~${meal.calories} kcal, ${meal.protein}g protéines, '
+            '${meal.carbs}g glucides, ${meal.fat}g lipides. '
+            'Format: **Ingrédients:** (quantités précises), **Instructions:** (étapes numérotées), **Conseils:** (optionnel).';
+        
+        try {
+          recipeContent = await service.getAnswer([
+            {'role': 'user', 'content': prompt}
+          ]);
+          // Sauvegarder la recette dans le cache du meal
+          meal.recipe = recipeContent;
+          await _saveRecipeToStorage(meal);
+        } catch (e) {
+          recipeContent = 'Recette pour ${meal.name}';
+        }
+      }
+
+      final success = await FavoritesService.addRecipeToFavorites(
+        recipeName: meal.name,
+        recipeContent: recipeContent ?? 'Recette pour ${meal.name}',
+        calories: meal.calories.toDouble(),
+        proteins: meal.protein.toDouble(),
+        carbs: meal.carbs.toDouble(),
+        fats: meal.fat.toDouble(),
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${meal.name} ajouté aux favoris'),
+            backgroundColor: FreshTheme.primaryMint,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ce repas est déjà dans vos favoris'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _viewRecipe(_Meal meal) async {
     String? recipe = meal.recipe;
 
@@ -602,6 +666,12 @@ class _JournalScreenState extends State<JournalScreen> {
                               onPressed: () => _viewRecipe(m),
                               child: const Text('Recette',
                                   style: TextStyle(fontSize: 12)),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.favorite_border,
+                                  color: FreshTheme.primaryMint, size: 20),
+                              onPressed: () => _addMealToFavorites(m),
+                              tooltip: 'Ajouter aux favoris',
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline,
