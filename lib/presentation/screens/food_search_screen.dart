@@ -29,7 +29,7 @@ class FoodSearchScreen extends StatefulWidget {
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
 }
 
-class _FoodSearchScreenState extends State<FoodSearchScreen> 
+class _FoodSearchScreenState extends State<FoodSearchScreen>
     with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _brandController = TextEditingController();
@@ -40,27 +40,35 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
   String _currentQuery = '';
   String _currentBrand = '';
   late GamificationService _gamificationService;
-  
+
   // Onglets pour historique et favoris
   late TabController _tabController;
   List<FoodItem> _favoritesFoods = [];
-  
+
   // Filtre pour favoris
   String _favoritesFilter = 'all'; // 'all', 'foods', 'recipes'
-  
+
   // Recherche contextuelle dans les favoris
   String _favoritesSearchQuery = '';
-  final TextEditingController _favoritesSearchController = TextEditingController();
+  final TextEditingController _favoritesSearchController =
+      TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _initGamification();
     _loadFavorites();
     // Charger l'historique au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<FoodSearchBloc>().add(GetFoodHistoryEvent());
+    });
+  }
+
+  void _onTabChanged() {
+    setState(() {
+      // Forcer le rebuild quand on change d'onglet pour masquer/afficher la barre de recherche
     });
   }
 
@@ -80,29 +88,31 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
   /// Filtre les favoris selon le type et la recherche
   List<FoodItem> get _filteredFavorites {
     List<FoodItem> filtered;
-    
+
     // Filtrer par type
     switch (_favoritesFilter) {
       case 'foods':
-        filtered = _favoritesFoods.where((item) => item.source != 'recipe').toList();
+        filtered =
+            _favoritesFoods.where((item) => item.source != 'recipe').toList();
         break;
       case 'recipes':
-        filtered = _favoritesFoods.where((item) => item.source == 'recipe').toList();
+        filtered =
+            _favoritesFoods.where((item) => item.source == 'recipe').toList();
         break;
       default:
         filtered = _favoritesFoods;
     }
-    
+
     // Filtrer par recherche si query non vide
     if (_favoritesSearchQuery.isNotEmpty) {
       final query = _favoritesSearchQuery.toLowerCase();
       filtered = filtered.where((item) {
         return item.name.toLowerCase().contains(query) ||
-               item.category.toLowerCase().contains(query) ||
-               (item.brand?.toLowerCase().contains(query) ?? false);
+            item.category.toLowerCase().contains(query) ||
+            (item.brand?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
-    
+
     return filtered;
   }
 
@@ -124,7 +134,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
   /// Ajoute/retire un aliment des favoris
   Future<void> _toggleFavorite(FoodItem food) async {
     final isFavorite = await FavoritesService.isFavorite(food);
-    
+
     if (isFavorite) {
       await FavoritesService.removeFromFavorites(food);
       if (mounted) {
@@ -148,7 +158,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
         );
       }
     }
-    
+
     // Recharger les favoris
     await _loadFavorites();
     // Forcer le rebuild pour mettre à jour les couleurs des cœurs
@@ -451,40 +461,42 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
         },
         body: Column(
           children: [
-            // Barre de recherche principale
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              height: _searchBarVisible ? 70 : 0,
-              padding: const EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: 8,
+            // Barre de recherche principale (masquée dans l'onglet favoris)
+            if (_tabController.index != 1)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: _searchBarVisible ? 70 : 0,
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: 8,
+                ),
+                child: AnimatedSearchBar(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  hintText: 'Rechercher un aliment...',
+                  onSearch: () => _performSearch(_searchController.text),
+                  onClear: _clearSearch,
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
-              child: AnimatedSearchBar(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                hintText: 'Rechercher un aliment...',
-                onSearch: () => _performSearch(_searchController.text),
-                onClear: _clearSearch,
-                borderRadius: BorderRadius.circular(14),
+
+            // Filtre par marque (masqué dans l'onglet favoris)
+            if (_tabController.index != 1)
+              BrandFilterBar(
+                controller: _brandController,
+                focusNode: _brandFocusNode,
+                onBrandFilter: _applyBrandFilter,
+                onClear: () {
+                  _brandController.clear();
+                  _applyBrandFilter('');
+                },
+                isVisible: _brandFilterVisible,
               ),
-            ),
 
-            // Filtre par marque
-            BrandFilterBar(
-              controller: _brandController,
-              focusNode: _brandFocusNode,
-              onBrandFilter: _applyBrandFilter,
-              onClear: () {
-                _brandController.clear();
-                _applyBrandFilter('');
-              },
-              isVisible: _brandFilterVisible,
-            ),
-
-            // Chips de filtres actifs
-            if (_currentBrand.isNotEmpty)
+            // Chips de filtres actifs (masqués dans l'onglet favoris)
+            if (_tabController.index != 1 && _currentBrand.isNotEmpty)
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -512,8 +524,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                   if (state is FoodSearchLoading) {
                     return ListView.builder(
                       primary: false,
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.only(
                         top: 16,
@@ -531,8 +542,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                     if (state.foods.isEmpty) {
                       return const EmptyResults(
                         message: 'Aucun résultat trouvé',
-                        submessage:
-                            'Essayez avec d\'autres termes de recherche',
+                        submessage: 'Essayez avec d\'autres termes de recherche',
                         icon: Icons.search_off,
                         color: FreshTheme.primaryMint,
                       );
@@ -555,18 +565,18 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                             child: Material(
                               color: Colors.transparent,
                               child: FutureBuilder<bool>(
-                                future: FavoritesService.isFavorite(food),
-                                builder: (context, snapshot) {
-                                  final isFavorite = snapshot.data ?? false;
-                                  return FoodCard(
-                                    food: food,
-                                    onTap: () => _navigateToFoodDetail(food),
-                                    showFavoriteButton: true,
-                                    isFavoriteItem: isFavorite,
-                                    onFavoriteToggle: () => _toggleFavorite(food),
-                                  );
-                                }
-                              ),
+                                  future: FavoritesService.isFavorite(food),
+                                  builder: (context, snapshot) {
+                                    final isFavorite = snapshot.data ?? false;
+                                    return FoodCard(
+                                      food: food,
+                                      onTap: () => _navigateToFoodDetail(food),
+                                      showFavoriteButton: true,
+                                      isFavoriteItem: isFavorite,
+                                      onFavoriteToggle: () =>
+                                          _toggleFavorite(food),
+                                    );
+                                  }),
                             ),
                           ),
                         );
@@ -587,16 +597,19 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                       children: [
                         // Onglets
                         Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: FreshTheme.cloudWhite,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: FreshTheme.primaryMint.withOpacity(0.2)),
+                            border: Border.all(
+                                color: FreshTheme.primaryMint.withOpacity(0.2)),
                           ),
                           child: TabBar(
                             controller: _tabController,
                             labelColor: FreshTheme.primaryMint,
-                            unselectedLabelColor: FreshTheme.midnightGray.withOpacity(0.6),
+                            unselectedLabelColor:
+                                FreshTheme.midnightGray.withOpacity(0.6),
                             indicatorColor: FreshTheme.primaryMint,
                             indicatorWeight: 3,
                             tabs: const [
@@ -611,7 +624,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                             ],
                           ),
                         ),
-                        
+
                         // Contenu des onglets
                         Expanded(
                           child: TabBarView(
@@ -639,31 +652,35 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                                       child: Material(
                                         color: Colors.transparent,
                                         child: FutureBuilder<bool>(
-                                          future: FavoritesService.isFavorite(food),
-                                          builder: (context, snapshot) {
-                                            final isFavorite = snapshot.data ?? false;
-                                            return FoodCard(
-                                              food: food,
-                                              onTap: () => _navigateToFoodDetail(food),
-                                              isHistoryItem: true,
-                                              showFavoriteButton: true,
-                                              isFavoriteItem: isFavorite,
-                                              onFavoriteToggle: () => _toggleFavorite(food),
-                                            );
-                                          }
-                                        ),
+                                            future: FavoritesService.isFavorite(
+                                                food),
+                                            builder: (context, snapshot) {
+                                              final isFavorite =
+                                                  snapshot.data ?? false;
+                                              return FoodCard(
+                                                food: food,
+                                                onTap: () =>
+                                                    _navigateToFoodDetail(food),
+                                                isHistoryItem: true,
+                                                showFavoriteButton: true,
+                                                isFavoriteItem: isFavorite,
+                                                onFavoriteToggle: () =>
+                                                    _toggleFavorite(food),
+                                              );
+                                            }),
                                       ),
                                     ),
                                   );
                                 },
                               ),
-                              
+
                               // Onglet Favoris
                               Column(
                                 children: [
                                   // Filtres pour les favoris
                                   Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
                                     child: Row(
                                       children: [
                                         Expanded(
@@ -672,118 +689,158 @@ class _FoodSearchScreenState extends State<FoodSearchScreen>
                                               ButtonSegment<String>(
                                                 value: 'all',
                                                 label: Text('Tous'),
-                                                icon: Icon(Icons.all_inclusive, size: 16),
+                                                icon: Icon(Icons.all_inclusive,
+                                                    size: 16),
                                               ),
                                               ButtonSegment<String>(
                                                 value: 'foods',
                                                 label: Text('Aliments'),
-                                                icon: Icon(Icons.restaurant, size: 16),
+                                                icon: Icon(Icons.restaurant,
+                                                    size: 16),
                                               ),
                                               ButtonSegment<String>(
                                                 value: 'recipes',
                                                 label: Text('Recettes'),
-                                                icon: Icon(Icons.book, size: 16),
+                                                icon:
+                                                    Icon(Icons.book, size: 16),
                                               ),
                                             ],
                                             selected: {_favoritesFilter},
-                                            onSelectionChanged: (Set<String> newSelection) {
+                                            onSelectionChanged:
+                                                (Set<String> newSelection) {
                                               setState(() {
-                                                _favoritesFilter = newSelection.first;
+                                                _favoritesFilter =
+                                                    newSelection.first;
                                                 // Effacer la recherche quand on change de filtre
                                                 _clearFavoritesSearch();
                                               });
                                             },
                                             style: SegmentedButton.styleFrom(
-                                              selectedBackgroundColor: FreshTheme.primaryMint,
-                                              selectedForegroundColor: Colors.white,
+                                              selectedBackgroundColor:
+                                                  FreshTheme.primaryMint,
+                                              selectedForegroundColor:
+                                                  Colors.white,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  
+
                                   // Barre de recherche contextuelle dans les favoris
                                   Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
                                     child: TextField(
                                       controller: _favoritesSearchController,
                                       decoration: InputDecoration(
-                                        hintText: _favoritesFilter == 'foods' 
+                                        hintText: _favoritesFilter == 'foods'
                                             ? 'Rechercher dans vos aliments favoris...'
                                             : _favoritesFilter == 'recipes'
                                                 ? 'Rechercher dans vos recettes favorites...'
                                                 : 'Rechercher dans vos favoris...',
                                         prefixIcon: const Icon(Icons.search),
-                                        suffixIcon: _favoritesSearchQuery.isNotEmpty
+                                        suffixIcon: _favoritesSearchQuery
+                                                .isNotEmpty
                                             ? IconButton(
                                                 icon: const Icon(Icons.clear),
-                                                onPressed: _clearFavoritesSearch,
+                                                onPressed:
+                                                    _clearFavoritesSearch,
                                               )
                                             : null,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: FreshTheme.primaryMint.withOpacity(0.3)),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: FreshTheme.primaryMint
+                                                  .withOpacity(0.3)),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: FreshTheme.primaryMint, width: 2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: FreshTheme.primaryMint,
+                                              width: 2),
                                         ),
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 12),
                                       ),
                                       onChanged: _performFavoritesSearch,
                                     ),
                                   ),
-                                  
+
                                   // Liste des favoris filtrés
                                   Expanded(
                                     child: _filteredFavorites.isEmpty
                                         ? EmptyResults(
-                                            message: _favoritesSearchQuery.isNotEmpty
+                                            message: _favoritesSearchQuery
+                                                    .isNotEmpty
                                                 ? 'Aucun résultat'
-                                                : _favoritesFilter == 'all' 
+                                                : _favoritesFilter == 'all'
                                                     ? 'Aucun favori'
-                                                    : _favoritesFilter == 'foods'
+                                                    : _favoritesFilter ==
+                                                            'foods'
                                                         ? 'Aucun aliment favori'
                                                         : 'Aucune recette favorite',
-                                            submessage: _favoritesSearchQuery.isNotEmpty
+                                            submessage: _favoritesSearchQuery
+                                                    .isNotEmpty
                                                 ? 'Aucun favori ne correspond à "${_favoritesSearchQuery}"'
                                                 : _favoritesFilter == 'all'
                                                     ? 'Ajoutez des aliments ou recettes en favoris'
-                                                    : _favoritesFilter == 'foods'
+                                                    : _favoritesFilter ==
+                                                            'foods'
                                                         ? 'Ajoutez des aliments en favoris depuis la recherche'
                                                         : 'Ajoutez des recettes en favoris depuis le plan du jour',
-                                            icon: _favoritesSearchQuery.isNotEmpty ? Icons.search_off : Icons.favorite_border,
+                                            icon:
+                                                _favoritesSearchQuery.isNotEmpty
+                                                    ? Icons.search_off
+                                                    : Icons.favorite_border,
                                             color: FreshTheme.primaryMint,
-                                            actionLabel: _favoritesSearchQuery.isNotEmpty ? 'Effacer la recherche' : null,
-                                            onActionPressed: _favoritesSearchQuery.isNotEmpty ? _clearFavoritesSearch : null,
+                                            actionLabel:
+                                                _favoritesSearchQuery.isNotEmpty
+                                                    ? 'Effacer la recherche'
+                                                    : null,
+                                            onActionPressed:
+                                                _favoritesSearchQuery.isNotEmpty
+                                                    ? _clearFavoritesSearch
+                                                    : null,
                                           )
                                         : ListView.builder(
                                             primary: false,
                                             keyboardDismissBehavior:
-                                                ScrollViewKeyboardDismissBehavior.onDrag,
-                                            physics: const BouncingScrollPhysics(),
+                                                ScrollViewKeyboardDismissBehavior
+                                                    .onDrag,
+                                            physics:
+                                                const BouncingScrollPhysics(),
                                             padding: const EdgeInsets.only(
                                               top: 16,
                                               bottom: 24,
                                               left: 16,
                                               right: 16,
                                             ),
-                                            itemCount: _filteredFavorites.length,
+                                            itemCount:
+                                                _filteredFavorites.length,
                                             itemBuilder: (context, index) {
-                                              final food = _filteredFavorites[index];
+                                              final food =
+                                                  _filteredFavorites[index];
                                               return AnimatedListItem(
                                                 index: index,
                                                 child: Padding(
-                                                  padding: const EdgeInsets.only(bottom: 8),
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom: 8),
                                                   child: Material(
                                                     color: Colors.transparent,
                                                     child: FoodCard(
                                                       food: food,
-                                                      onTap: () => _navigateToFoodDetail(food),
+                                                      onTap: () =>
+                                                          _navigateToFoodDetail(
+                                                              food),
                                                       isFavoriteItem: true,
                                                       showFavoriteButton: true,
-                                                      onFavoriteToggle: () => _toggleFavorite(food),
+                                                      onFavoriteToggle: () =>
+                                                          _toggleFavorite(food),
                                                     ),
                                                   ),
                                                 ),
