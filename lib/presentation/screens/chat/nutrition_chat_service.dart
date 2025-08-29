@@ -43,6 +43,16 @@ class NutritionChatService {
   // Use OpenAI GPT first, then Perplexity if available
   bool get _useOpenAI => _openaiKey != null && _openaiKey!.isNotEmpty;
   bool get _usePerplexity => _pplxKey != null && _pplxKey!.isNotEmpty;
+  // Méthode pour recharger le prompt depuis .env
+  Future<void> reloadPromptFromEnv() async {
+    try {
+      await dotenv.load(fileName: ".env");
+      print('🔄 Prompt coach rechargé depuis .env');
+    } catch (e) {
+      print('⚠️ Erreur rechargement .env: $e');
+    }
+  }
+
   String get _systemPrompt {
     final basePrompt = dotenv.env['COACH_SYSTEM_PROMPT']?.trim() ??
         '''

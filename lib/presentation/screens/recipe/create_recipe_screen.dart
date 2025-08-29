@@ -853,8 +853,14 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
 
   // Méthodes speech-to-text
   Future<void> _startListening() async {
-    final service = _useGoogleSpeech ? _googleSpeechService : _speechService;
-    
+    setState(() {
+      _isListening = true;
+      _listeningDuration = Duration.zero;
+    });
+
+    _pulseController.repeat();
+    _startListeningTimer();
+
     if (_useGoogleSpeech) {
       if (!_googleSpeechService.isAvailable) {
         if (mounted) {
@@ -865,37 +871,51 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
             ),
           );
         }
+        setState(() => _isListening = false);
+        _pulseController.stop();
         return;
       }
+      
+      await _googleSpeechService.startListening(
+        onResult: (result) {
+          setState(() {
+            _transcription = result;
+            _partialTranscription = '';
+          });
+        },
+        onPartialResult: (partial) {
+          setState(() => _partialTranscription = partial);
+        },
+        timeout: _maxListeningDuration,
+      );
     } else {
-      if (!_speechService.isAvailable) return;
+      if (!_speechService.isAvailable) {
+        setState(() => _isListening = false);
+        _pulseController.stop();
+        return;
+      }
+      
+      await _speechService.startListening(
+        onResult: (result) {
+          setState(() {
+            _transcription = result;
+            _partialTranscription = '';
+          });
+        },
+        onPartialResult: (partial) {
+          setState(() => _partialTranscription = partial);
+        },
+        timeout: _maxListeningDuration,
+      );
     }
-
-    setState(() {
-      _isListening = true;
-      _listeningDuration = Duration.zero;
-    });
-
-    _pulseController.repeat();
-    _startListeningTimer();
-
-    await service.startListening(
-      onResult: (result) {
-        setState(() {
-          _transcription = result;
-          _partialTranscription = '';
-        });
-      },
-      onPartialResult: (partial) {
-        setState(() => _partialTranscription = partial);
-      },
-      timeout: _maxListeningDuration,
-    );
   }
 
   Future<void> _stopListening() async {
-    final service = _useGoogleSpeech ? _googleSpeechService : _speechService;
-    await service.stopRecording();
+    if (_useGoogleSpeech) {
+      await _googleSpeechService.stopRecording();
+    } else {
+      await _speechService.stopListening();
+    }
     setState(() => _isListening = false);
     _pulseController.stop();
   }

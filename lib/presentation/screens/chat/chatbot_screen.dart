@@ -142,6 +142,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     }
   }
 
+  Future<void> _reloadCoachPrompt() async {
+    await _service.reloadPromptFromEnv();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🔄 Prompt coach rechargé depuis .env'),
+          backgroundColor: EnhancedTheme.primaryTeal,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -213,6 +226,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         backgroundColor: EnhancedTheme.primaryTeal,
         foregroundColor: EnhancedTheme.neutralWhite,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Recharger prompt coach (.env)',
+            onPressed: _reloadCoachPrompt,
+          ),
+        ],
       ),
       body: Column(
         children: [
