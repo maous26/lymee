@@ -5,12 +5,14 @@ Copy the following into a new file named .env in the project root:
 # - Génération d'images de recettes (DALL-E 3)
 OPENAI_API_KEY=YOUR_OPENAI_KEY_HERE
 
+# Google API Key - Nécessaire pour:
+# - Speech-to-Text Google Cloud (reconnaissance vocale avancée)
+# - Gemini AI (si utilisé)
+GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY_HERE
+
 # Configuration optionnelle OpenAI
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
 
 # Coach System Prompt (optionnel - sinon prompt par défaut)
 COACH_SYSTEM_PROMPT=
-
-# Note: Speech-to-Text utilise les services natifs iOS/Android
-# Aucune clé API externe nécessaire pour la reconnaissance vocale

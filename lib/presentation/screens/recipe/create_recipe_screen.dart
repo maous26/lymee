@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lym_nutrition/core/services/speech_to_text_service.dart';
+import 'package:lym_nutrition/core/services/google_speech_service.dart';
 import 'package:lym_nutrition/core/services/image_generation_service.dart';
 import 'package:lym_nutrition/core/services/gamification_service.dart';
 import 'package:lym_nutrition/domain/entities/gamification_models.dart';
@@ -20,8 +21,11 @@ class CreateRecipeScreen extends StatefulWidget {
 class _CreateRecipeScreenState extends State<CreateRecipeScreen>
     with TickerProviderStateMixin {
   final SpeechToTextService _speechService = SpeechToTextService();
+  final GoogleSpeechService _googleSpeechService = GoogleSpeechService();
   final ImageGenerationService _imageService = ImageGenerationService();
   late GamificationService _gamificationService;
+  
+  bool _useGoogleSpeech = true; // Toggle pour tester les deux services
 
   // Controllers
   final TextEditingController _nameController = TextEditingController();
@@ -58,7 +62,17 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
   Future<void> _initServices() async {
     final prefs = await SharedPreferences.getInstance();
     _gamificationService = GamificationService(prefs);
+    
+    // Initialiser les deux services speech
     await _speechService.initialize();
+    final googleInitialized = await _googleSpeechService.initialize();
+    
+    if (googleInitialized) {
+      debugPrint('✅ Google Speech Service disponible');
+    } else {
+      debugPrint('⚠️ Google Speech Service non disponible, utilisation du service natif');
+      _useGoogleSpeech = false;
+    }
   }
 
   void _setupAnimations() {
@@ -205,7 +219,50 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
                 ),
             textAlign: TextAlign.center,
           ).animate(delay: 200.ms).fadeIn(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
+
+          // Sélecteur de service speech
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Text('Service: ', style: Theme.of(context).textTheme.titleSmall),
+                Expanded(
+                  child: SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment<bool>(
+                        value: false,
+                        label: Text('Natif'),
+                        icon: Icon(Icons.phone_android, size: 16),
+                      ),
+                      ButtonSegment<bool>(
+                        value: true,
+                        label: Text('Google'),
+                        icon: Icon(Icons.cloud, size: 16),
+                      ),
+                    ],
+                    selected: {_useGoogleSpeech},
+                    onSelectionChanged: (Set<bool> newSelection) {
+                      setState(() {
+                        _useGoogleSpeech = newSelection.first;
+                      });
+                    },
+                    style: SegmentedButton.styleFrom(
+                      selectedBackgroundColor: FreshTheme.primaryMint,
+                      selectedForegroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.science, color: FreshTheme.primaryMint),
+                  tooltip: 'Tester Google API',
+                  onPressed: _testGoogleSpeechAPI,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
 
           // Bouton micro animé
           GestureDetector(
@@ -778,9 +835,41 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
     }
   }
 
+  // Méthode de test de l'API Google
+  Future<void> _testGoogleSpeechAPI() async {
+    final result = await _googleSpeechService.testTranscription();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result ?? 'Test échoué'),
+          backgroundColor: result != null && result.contains('succès') 
+              ? FreshTheme.primaryMint 
+              : Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   // Méthodes speech-to-text
   Future<void> _startListening() async {
-    if (!_speechService.isAvailable) return;
+    final service = _useGoogleSpeech ? _googleSpeechService : _speechService;
+    
+    if (_useGoogleSpeech) {
+      if (!_googleSpeechService.isAvailable) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Service Google Speech non disponible'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+    } else {
+      if (!_speechService.isAvailable) return;
+    }
 
     setState(() {
       _isListening = true;
@@ -790,7 +879,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
     _pulseController.repeat();
     _startListeningTimer();
 
-    await _speechService.startListening(
+    await service.startListening(
       onResult: (result) {
         setState(() {
           _transcription = result;
@@ -805,7 +894,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen>
   }
 
   Future<void> _stopListening() async {
-    await _speechService.stopListening();
+    final service = _useGoogleSpeech ? _googleSpeechService : _speechService;
+    await service.stopRecording();
     setState(() => _isListening = false);
     _pulseController.stop();
   }

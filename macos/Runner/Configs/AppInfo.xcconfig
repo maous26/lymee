@@ -12,3 +12,6 @@ PRODUCT_BUNDLE_IDENTIFIER = com.lym.lymNutrition
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 com.lym. All rights reserved.
+
+// Minimum macOS deployment target for speech_to_text support
+MACOSX_DEPLOYMENT_TARGET = 11.0
