@@ -264,12 +264,73 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
+  /// Vérifier si un repas est dans les favoris
+  Future<bool> _isMealInFavorites(_Meal meal) async {
+    try {
+      final favorites = await FavoritesService.getFavorites();
+      final recipeId = 'recipe_${meal.name.replaceAll(' ', '_').toLowerCase()}';
+      return favorites.any((item) => item.id == recipeId && item.source == 'recipe');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Basculer l'état favori d'un repas
+  Future<void> _toggleMealFavorites(_Meal meal) async {
+    final isFavorite = await _isMealInFavorites(meal);
+    
+    if (isFavorite) {
+      // Retirer des favoris
+      await _removeMealFromFavorites(meal);
+    } else {
+      // Ajouter aux favoris
+      await _addMealToFavorites(meal);
+    }
+    
+    // Forcer le rebuild pour mettre à jour l'icône
+    setState(() {});
+  }
+
+  /// Retirer un repas des favoris
+  Future<void> _removeMealFromFavorites(_Meal meal) async {
+    try {
+      final favorites = await FavoritesService.getFavorites();
+      final recipeId = 'recipe_${meal.name.replaceAll(' ', '_').toLowerCase()}';
+      final mealToRemove = favorites.firstWhere(
+        (item) => item.id == recipeId && item.source == 'recipe',
+        orElse: () => throw Exception('Repas non trouvé dans les favoris'),
+      );
+      
+      await FavoritesService.removeFromFavorites(mealToRemove);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${meal.name} retiré des favoris'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   /// Ajouter un repas aux favoris
   Future<void> _addMealToFavorites(_Meal meal) async {
     try {
       // Générer la recette si elle n'existe pas
-      String? recipeContent = meal.recipe;
-      if (recipeContent == null || recipeContent.isEmpty) {
+      String recipeContent = meal.recipe ?? '';
+      if (recipeContent.isEmpty) {
         // Générer la recette en arrière-plan
         final service = NutritionChatService();
         final prompt = 'Recette détaillée en français pour ${meal.name}. '
@@ -291,7 +352,7 @@ class _JournalScreenState extends State<JournalScreen> {
 
       final success = await FavoritesService.addRecipeToFavorites(
         recipeName: meal.name,
-        recipeContent: recipeContent ?? 'Recette pour ${meal.name}',
+        recipeContent: recipeContent,
         calories: meal.calories.toDouble(),
         proteins: meal.protein.toDouble(),
         carbs: meal.carbs.toDouble(),
@@ -667,11 +728,20 @@ class _JournalScreenState extends State<JournalScreen> {
                               child: const Text('Recette',
                                   style: TextStyle(fontSize: 12)),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.favorite_border,
-                                  color: FreshTheme.primaryMint, size: 20),
-                              onPressed: () => _addMealToFavorites(m),
-                              tooltip: 'Ajouter aux favoris',
+                            FutureBuilder<bool>(
+                              future: _isMealInFavorites(m),
+                              builder: (context, snapshot) {
+                                final isFavorite = snapshot.data ?? false;
+                                return IconButton(
+                                  icon: Icon(
+                                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                                    color: isFavorite ? Colors.red : FreshTheme.primaryMint,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => _toggleMealFavorites(m),
+                                  tooltip: isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                                );
+                              }
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline,
